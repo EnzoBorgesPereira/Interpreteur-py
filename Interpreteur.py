@@ -231,7 +231,6 @@ def evalExpr(t):
             val = evalExpr(t[1])
             if isinstance(t[1], str):
                 names[t[1]] = val + 1
-                print('++', val)
                 return val
             else:
                 raise ValueError("++ s'applique uniquement sur une variable")
@@ -245,10 +244,9 @@ def evalExpr(t):
     return 0
 
 s = '''
-x = 0;
-x++;
-print(x);
-x++;
-print(x);
+while (x < 5) {
+    x++;
+    print(x);
+};
 '''
 yacc.parse(s)
