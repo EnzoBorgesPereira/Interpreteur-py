@@ -2,5 +2,5 @@
 
 Groupe :
 
-BORGES PEREIRA Enzo
-BACHER Téo
+- BORGES PEREIRA Enzo
+- BACHER Téo

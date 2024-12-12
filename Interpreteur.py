@@ -94,7 +94,7 @@ def p_statement_if(p):
     if len(p) == 8:
         p[0] = ('if', p[3], p[6])
     else:
-        p[0] = ('if', p[3], p[6], p[10])
+        p[0] = ('if', p[3], p[6], ('else', p[10]))
 
 def p_statement_while(p):
     'statement : WHILE LPAREN expression RPAREN LBRACE bloc RBRACE'
@@ -136,34 +136,35 @@ import ply.yacc as yacc
 yacc.yacc()
 
 def evalInst(p):
-    if type(p) is tuple:
-        if p[0] == 'print':
+    if isinstance(p, tuple):
+        tag = p[0]
+        if tag == 'print':
             print(evalExpr(p[1]))
-        elif p[0] == 'bloc':
+        elif tag == 'bloc':
             for stmt in p[1]:
                 evalInst(stmt)
-        elif p[0] == 'assign':
+        elif tag == 'assign':
             names[p[1]] = evalExpr(p[2])
-        elif p[0] == 'if':
+        elif tag == 'if':
             if evalExpr(p[1]):
                 evalInst(p[2])
-            elif p[3] is not None:
+            elif len(p) > 3:
                 evalInst(p[3])
-        elif p[0] == 'while':
+        elif tag == 'while':
             while evalExpr(p[1]):
                 evalInst(p[2])
-        elif p[0] == 'for':
+        elif tag == 'for':
             evalInst(p[1])
             while evalExpr(p[2]):
                 evalInst(p[4])
                 evalInst(p[3])
 
 def evalExpr(t):
-    if type(t) is int:
+    if isinstance(t, int):
         return t
-    elif type(t) is str:
+    elif isinstance(t, str):
         return names.get(t, 0)
-    elif type(t) is tuple:
+    elif isinstance(t, tuple):
         op = t[0]
         if op == '+':
             return evalExpr(t[1]) + evalExpr(t[2])
@@ -189,7 +190,7 @@ def evalExpr(t):
 
 s = '''
 x = 5;
-y= 6;
+y = 6;
 if (x == 5) {
     print(x);
 } else {
