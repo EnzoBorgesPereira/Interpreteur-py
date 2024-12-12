@@ -3,3 +3,4 @@ ___pycache__
 *.pyc
 *.gv
 *.pdf
+parsetab.py
