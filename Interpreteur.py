@@ -74,11 +74,11 @@ def p_bloc(p):
             | statement SEMI'''
     if len(p) == 4:
         if p[1][0] == 'bloc':
-            p[0] = ('bloc', p[1][1] + [p[2]])
+            p[0] = ('bloc', p[1] , p[2])
         else:
-            p[0] = ('bloc', [p[1], p[2]])
+            p[0] = ('bloc', p[1])
     else:
-        p[0] = ('bloc', [p[1]])
+        p[0] = ('bloc', p[1])
 
 def p_statement_print(p):
     'statement : PRINT LPAREN expression RPAREN'
@@ -92,7 +92,7 @@ def p_statement_if(p):
     '''statement : IF LPAREN expression RPAREN LBRACE bloc RBRACE
                  | IF LPAREN expression RPAREN LBRACE bloc RBRACE ELSE LBRACE bloc RBRACE'''
     if len(p) == 8:
-        p[0] = ('if', p[3], p[6], None)
+        p[0] = ('if', p[3], p[6])
     else:
         p[0] = ('if', p[3], p[6], p[10])
 
@@ -188,21 +188,13 @@ def evalExpr(t):
     return 0
 
 s = '''
-x = 0;
-if (x == 0) {
-    print(1);
-} else {
-    print(2);
-}
-
-while (x < 5) {
-    x = x + 1;
+x = 5;
+y= 6;
+if (x == 5) {
     print(x);
-}
-
-for (i = 0; i < 3; i = i + 1) {
-    print(i);
-}
+} else {
+    print(y);
+};
 '''
 
 yacc.parse(s)
