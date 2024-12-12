@@ -1,9 +1,12 @@
 from genereTreeGraphviz2 import printTreeGraph
+import ply.lex as lex
+import ply.yacc as yacc
 
 reserved = {
     'print': 'PRINT',
     'if': 'IF',
     'else': 'ELSE',
+    'elif': 'ELIF',
     'for': 'FOR',
     'while': 'WHILE'
 }
@@ -51,10 +54,10 @@ def t_error(t):
     print("Caractère illégal '%s'" % t.value[0])
     t.lexer.skip(1)
 
-import ply.lex as lex
 lex.lex()
 
 names = {}
+
 precedence = (
     ('left', 'OR'),
     ('left', 'AND'),
@@ -70,15 +73,14 @@ def p_start(p):
     evalInst(p[1])
 
 def p_bloc(p):
-    '''bloc : bloc statement SEMI
-            | statement SEMI'''
-    if len(p) == 4:
-        if p[1][0] == 'bloc':
-            p[0] = ('bloc', p[1] , p[2])
-        else:
-            p[0] = ('bloc', p[1])
-    else:
+    '''bloc : statement SEMI
+            | bloc statement SEMI'''
+    if len(p) == 3:
+        # un seul statement
         p[0] = ('bloc', p[1])
+    else:
+        # bloc étendu avec un nouveau statement
+        p[0] = ('bloc', p[1], p[2])
 
 def p_statement_print(p):
     'statement : PRINT LPAREN expression RPAREN'
@@ -89,12 +91,22 @@ def p_statement_assign(p):
     p[0] = ('assign', p[1], p[3])
 
 def p_statement_if(p):
-    '''statement : IF LPAREN expression RPAREN LBRACE bloc RBRACE
-                 | IF LPAREN expression RPAREN LBRACE bloc RBRACE ELSE LBRACE bloc RBRACE'''
-    if len(p) == 8:
-        p[0] = ('if', p[3], p[6])
+    'statement : IF LPAREN expression RPAREN LBRACE bloc RBRACE elif_else_part'
+    p[0] = ('if', p[3], p[6], p[8])
+
+def p_elif_else_part(p):
+    '''elif_else_part : ELIF LPAREN expression RPAREN LBRACE bloc RBRACE elif_else_part
+                      | ELSE LBRACE bloc RBRACE
+                      | '''
+    if len(p) == 9:
+        # ('elif', condition, bloc, suite)
+        p[0] = ('elif', p[3], p[6], p[8])
+    elif len(p) == 5:
+        # ('else', bloc)
+        p[0] = ('else', p[3])
     else:
-        p[0] = ('if', p[3], p[6], ('else', p[10]))
+        # Pas de elif/else
+        p[0] = None
 
 def p_statement_while(p):
     'statement : WHILE LPAREN expression RPAREN LBRACE bloc RBRACE'
@@ -102,6 +114,7 @@ def p_statement_while(p):
 
 def p_statement_for(p):
     'statement : FOR LPAREN statement SEMI expression SEMI statement RPAREN LBRACE bloc RBRACE'
+    # for(x=...; condition; x=...) { bloc }
     p[0] = ('for', p[3], p[5], p[7], p[10])
 
 def p_expression_binop(p):
@@ -132,8 +145,19 @@ def p_expression_name(p):
 def p_error(p):
     print("Erreur de syntaxe !", p)
 
-import ply.yacc as yacc
 yacc.yacc()
+
+def handle_elif_else(node):
+    if node is None:
+        return
+    tag = node[0]
+    if tag == 'elif':
+        if evalExpr(node[1]):
+            evalInst(node[2])
+        else:
+            handle_elif_else(node[3])
+    elif tag == 'else':
+        evalInst(node[1])
 
 def evalInst(p):
     if isinstance(p, tuple):
@@ -141,23 +165,29 @@ def evalInst(p):
         if tag == 'print':
             print(evalExpr(p[1]))
         elif tag == 'bloc':
-            for stmt in p[1]:
-                evalInst(stmt)
+            # Un bloc peut contenir soit:
+            # ('bloc', stmt)
+            # ('bloc', bloc, stmt)
+            # On va donc parcourir p[1:], et évaluer chaque élément.
+            for elem in p[1:]:
+                evalInst(elem)
         elif tag == 'assign':
             names[p[1]] = evalExpr(p[2])
         elif tag == 'if':
             if evalExpr(p[1]):
                 evalInst(p[2])
-            elif len(p) > 3:
-                evalInst(p[3])
+            else:
+                handle_elif_else(p[3])
         elif tag == 'while':
             while evalExpr(p[1]):
                 evalInst(p[2])
         elif tag == 'for':
-            evalInst(p[1])
+            # for(init; condition; incrementation) { bloc }
+            evalInst(p[1]) # init
             while evalExpr(p[2]):
-                evalInst(p[4])
-                evalInst(p[3])
+                evalInst(p[4]) # bloc
+                evalInst(p[3]) # incrementation
+        # Autres instructions si nécessaires
 
 def evalExpr(t):
     if isinstance(t, int):
@@ -166,35 +196,41 @@ def evalExpr(t):
         return names.get(t, 0)
     elif isinstance(t, tuple):
         op = t[0]
+        left = evalExpr(t[1]) if len(t) > 1 else None
+        right = evalExpr(t[2]) if len(t) > 2 else None
+
         if op == '+':
-            return evalExpr(t[1]) + evalExpr(t[2])
+            return left + right
         elif op == '-':
-            return evalExpr(t[1]) - evalExpr(t[2])
+            return left - right
         elif op == '*':
-            return evalExpr(t[1]) * evalExpr(t[2])
+            return left * right
         elif op == '/':
-            return evalExpr(t[1]) / evalExpr(t[2])
+            return left / right
         elif op == '<':
-            return evalExpr(t[1]) < evalExpr(t[2])
+            return left < right
         elif op == '>':
-            return evalExpr(t[1]) > evalExpr(t[2])
+            return left > right
         elif op == '<=':
-            return evalExpr(t[1]) <= evalExpr(t[2])
+            return left <= right
         elif op == '==':
-            return evalExpr(t[1]) == evalExpr(t[2])
+            return left == right
         elif op == 'AND':
-            return evalExpr(t[1]) and evalExpr(t[2])
+            return left and right
         elif op == 'OR':
-            return evalExpr(t[1]) or evalExpr(t[2])
+            return left or right
     return 0
 
+# Exemple de test
 s = '''
 x = 5;
 y = 6;
-if (x == 5) {
+if (3 == 5) {
     print(x);
-} else {
+} elif (4 == 6) {
     print(y);
+} else {
+    print(0);
 };
 '''
 
