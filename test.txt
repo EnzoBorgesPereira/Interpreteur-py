@@ -1,11 +1,11 @@
 while (x < 5) {
-    x = x + 1;
+    x++;
     print(x);
-}
+};
 
 for (i = 0; i < 3; i = i + 1) {
     print(i);
-}
+};
 
 x = 5;
 y= 6;

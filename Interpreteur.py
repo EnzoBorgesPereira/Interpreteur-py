@@ -14,7 +14,7 @@ reserved = {
 tokens = [
     'NUMBER', 'MINUS', 'PLUS', 'TIMES', 'DIVIDE', 'LPAREN',
     'RPAREN', 'OR', 'AND', 'SEMI', 'EGAL', 'NAME', 'INF', 'SUP',
-    'EGALEGAL', 'INFEG', 'LBRACE', 'RBRACE'
+    'EGALEGAL', 'INFEG', 'LBRACE', 'RBRACE', 'INCR', 'DECR'
 ] + list(reserved.values())
 
 t_PLUS = r'\+'
@@ -33,6 +33,8 @@ t_INFEG = r'<='
 t_EGALEGAL = r'=='
 t_LBRACE = r'\{'
 t_RBRACE = r'\}'
+t_INCR = r'\+\+'
+t_DECR = r'--'
 
 def t_NAME(t):
     r'[a-zA-Z_][a-zA-Z_0-9]*'
@@ -64,6 +66,7 @@ precedence = (
     ('nonassoc', 'INF', 'INFEG', 'EGALEGAL', 'SUP'),
     ('left', 'PLUS', 'MINUS'),
     ('left', 'TIMES', 'DIVIDE'),
+    ('right', 'INCR', 'DECR')
 )
 
 def p_start(p):
@@ -99,13 +102,10 @@ def p_elif_else_part(p):
                       | ELSE LBRACE bloc RBRACE
                       | '''
     if len(p) == 9:
-        # ('elif', condition, bloc, suite)
         p[0] = ('elif', p[3], p[6], p[8])
     elif len(p) == 5:
-        # ('else', bloc)
         p[0] = ('else', p[3])
     else:
-        # Pas de elif/else
         p[0] = None
 
 def p_statement_while(p):
@@ -114,7 +114,6 @@ def p_statement_while(p):
 
 def p_statement_for(p):
     'statement : FOR LPAREN statement SEMI expression SEMI statement RPAREN LBRACE bloc RBRACE'
-    # for(x=...; condition; x=...) { bloc }
     p[0] = ('for', p[3], p[5], p[7], p[10])
 
 def p_expression_binop(p):
@@ -129,6 +128,14 @@ def p_expression_binop(p):
                   | expression AND expression
                   | expression OR expression'''
     p[0] = (p[2], p[1], p[3])
+
+def p_expression_incr(p):
+    'expression : expression INCR'
+    p[0] = ('++', p[1])
+
+def p_expression_decr(p):
+    'expression : expression DECR'
+    p[0] = ('--', p[1])
 
 def p_expression_group(p):
     'expression : LPAREN expression RPAREN'
@@ -165,10 +172,6 @@ def evalInst(p):
         if tag == 'print':
             print(evalExpr(p[1]))
         elif tag == 'bloc':
-            # Un bloc peut contenir soit:
-            # ('bloc', stmt)
-            # ('bloc', bloc, stmt)
-            # On va donc parcourir p[1:], et évaluer chaque élément.
             for elem in p[1:]:
                 evalInst(elem)
         elif tag == 'assign':
@@ -182,12 +185,10 @@ def evalInst(p):
             while evalExpr(p[1]):
                 evalInst(p[2])
         elif tag == 'for':
-            # for(init; condition; incrementation) { bloc }
             evalInst(p[1]) # init
             while evalExpr(p[2]):
                 evalInst(p[4]) # bloc
-                evalInst(p[3]) # incrementation
-        # Autres instructions si nécessaires
+                evalInst(p[3]) # incr
 
 def evalExpr(t):
     if isinstance(t, int):
@@ -196,42 +197,52 @@ def evalExpr(t):
         return names.get(t, 0)
     elif isinstance(t, tuple):
         op = t[0]
-        left = evalExpr(t[1]) if len(t) > 1 else None
-        right = evalExpr(t[2]) if len(t) > 2 else None
-
-        if op == '+':
-            return left + right
-        elif op == '-':
-            return left - right
-        elif op == '*':
-            return left * right
-        elif op == '/':
-            return left / right
-        elif op == '<':
-            return left < right
-        elif op == '>':
-            return left > right
-        elif op == '<=':
-            return left <= right
-        elif op == '==':
-            return left == right
-        elif op == 'AND':
-            return left and right
-        elif op == 'OR':
-            return left or right
+        # Opérateurs binaires
+        if op in ['+', '-', '*', '/', '<', '>', '<=', '==', 'AND', 'OR']:
+            left = evalExpr(t[1])
+            right = evalExpr(t[2])
+            if op == '+':
+                return left + right
+            elif op == '-':
+                return left - right
+            elif op == '*':
+                return left * right
+            elif op == '/':
+                return left / right
+            elif op == '<':
+                return left < right
+            elif op == '>':
+                return left > right
+            elif op == '<=':
+                return left <= right
+            elif op == '==':
+                return left == right
+            elif op == 'AND':
+                return left and right
+            elif op == 'OR':
+                return left or right
+        elif op == '++':
+            val = evalExpr(t[1])
+            if isinstance(t[1], str):
+                names[t[1]] = val + 1
+                return val
+            else:
+                raise ValueError("++ s'applique uniquement sur une variable")
+        elif op == '--':
+            val = evalExpr(t[1])
+            if isinstance(t[1], str):
+                names[t[1]] = val - 1
+                return val
+            else:
+                raise ValueError("-- s'applique uniquement sur une variable")
     return 0
 
 # Exemple de test
 s = '''
-x = 5;
-y = 6;
-if (3 == 5) {
+x = 0;
+while (x < 5) {
+    x++;
     print(x);
-} elif (4 == 6) {
-    print(y);
-} else {
-    print(0);
 };
 '''
-
 yacc.parse(s)
