@@ -110,9 +110,9 @@ def p_param(p):
     '''param : NAME
              | param COMMA NAME'''
     if len(p) == 2:  
-        p[0] = ("param", [p[1]])
+        p[0] = ("param", p[1])
     else:  
-        p[0] = ("param", p[1][1] + [p[3]])
+        p[0] = ("param", p[1] , p[3])
 
 def p_statement_function(p):
     '''statement : FUNCTION NAME LPAREN RPAREN LBRACE bloc RBRACE  
@@ -121,7 +121,7 @@ def p_statement_function(p):
     if (len(p)== 8):
         p[0] = ('function',(p[2], p[6]))
     elif(len(p)==9):
-        p[0] = ('function',p[2], p[4], p[7])
+        p[0] = ('function',(p[2], p[4], p[7]))
     else:
         p[0] = None
 
@@ -210,8 +210,10 @@ def evalExpr(t):
 
 s = '''
 a = 1;
-function carre(a){
+b = 1;
+function carre(a,b){
     print(a);
+    print(b);
     };
 '''
 
