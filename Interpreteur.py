@@ -116,6 +116,10 @@ def p_statement_for(p):
     'statement : FOR LPAREN statement SEMI expression SEMI statement RPAREN LBRACE bloc RBRACE'
     p[0] = ('for', p[3], p[5], p[7], p[10])
 
+def p_statement_expr(p):
+    'statement : expression'
+    p[0] = p[1]
+
 def p_expression_binop(p):
     '''expression : expression PLUS expression
                   | expression MINUS expression
@@ -189,6 +193,8 @@ def evalInst(p):
             while evalExpr(p[2]):
                 evalInst(p[4]) # bloc
                 evalInst(p[3]) # incr
+        else:
+            evalExpr(p)
 
 def evalExpr(t):
     if isinstance(t, int):
@@ -225,6 +231,7 @@ def evalExpr(t):
             val = evalExpr(t[1])
             if isinstance(t[1], str):
                 names[t[1]] = val + 1
+                print('++', val)
                 return val
             else:
                 raise ValueError("++ s'applique uniquement sur une variable")
@@ -237,12 +244,11 @@ def evalExpr(t):
                 raise ValueError("-- s'applique uniquement sur une variable")
     return 0
 
-# Exemple de test
 s = '''
 x = 0;
-while (x < 5) {
-    x++;
-    print(x);
-};
+x++;
+print(x);
+x++;
+print(x);
 '''
 yacc.parse(s)
