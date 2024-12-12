@@ -66,7 +66,8 @@ precedence = (
     ('nonassoc', 'INF', 'INFEG', 'EGALEGAL', 'SUP'),
     ('left', 'PLUS', 'MINUS'),
     ('left', 'TIMES', 'DIVIDE'),
-    ('right', 'INCR', 'DECR')
+    ('right', 'INCR', 'DECR'),
+    ('right', 'UMINUS')
 )
 
 def p_start(p):
@@ -152,6 +153,11 @@ def p_expression_number(p):
 def p_expression_name(p):
     'expression : NAME'
     p[0] = p[1]
+
+def p_expression_uminus(p):
+    'expression : MINUS expression %prec UMINUS'
+    #  -expr => 0 - expr
+    p[0] = ('-', 0, p[2])
 
 def p_error(p):
     print("Erreur de syntaxe !", p)
@@ -244,8 +250,9 @@ def evalExpr(t):
     return 0
 
 s = '''
-while (x < 5) {
-    x++;
+x = 0;
+while (x < -5) {
+    x--;
     print(x);
 };
 '''
