@@ -5,13 +5,14 @@ reserved = {
     'if': 'IF',
     'else': 'ELSE',
     'for': 'FOR',
-    'while': 'WHILE'
+    'while': 'WHILE',
+    'function': 'FUNCTION'
 }
 
 tokens = [
     'NUMBER', 'MINUS', 'PLUS', 'TIMES', 'DIVIDE', 'LPAREN',
     'RPAREN', 'OR', 'AND', 'SEMI', 'EGAL', 'NAME', 'INF', 'SUP',
-    'EGALEGAL', 'INFEG', 'LBRACE', 'RBRACE'
+    'EGALEGAL', 'INFEG', 'LBRACE', 'RBRACE', 'COMMA'
 ] + list(reserved.values())
 
 t_PLUS = r'\+'
@@ -30,6 +31,7 @@ t_INFEG = r'<='
 t_EGALEGAL = r'=='
 t_LBRACE = r'\{'
 t_RBRACE = r'\}'
+t_COMMA = r'\,'
 
 def t_NAME(t):
     r'[a-zA-Z_][a-zA-Z_0-9]*'
@@ -103,6 +105,25 @@ def p_statement_while(p):
 def p_statement_for(p):
     'statement : FOR LPAREN statement SEMI expression SEMI statement RPAREN LBRACE bloc RBRACE'
     p[0] = ('for', p[3], p[5], p[7], p[10])
+
+def p_param(p):
+    '''param : NAME
+             | param COMMA NAME'''
+    if len(p) == 2:  
+        p[0] = ("param", [p[1]])
+    else:  
+        p[0] = ("param", p[1][1] + [p[3]])
+
+def p_statement_function(p):
+    '''statement : FUNCTION NAME LPAREN RPAREN LBRACE bloc RBRACE  
+                 | FUNCTION NAME LPAREN param RPAREN LBRACE bloc RBRACE 
+                 |'''
+    if (len(p)== 8):
+        p[0] = ('function',(p[2], p[6]))
+    elif(len(p)==9):
+        p[0] = ('function',p[2], p[4], p[7])
+    else:
+        p[0] = None
 
 def p_expression_binop(p):
     '''expression : expression PLUS expression
@@ -188,13 +209,10 @@ def evalExpr(t):
     return 0
 
 s = '''
-x = 5;
-y= 6;
-if (x == 5) {
-    print(x);
-} else {
-    print(y);
-};
+a = 1;
+function carre(a){
+    print(a);
+    };
 '''
 
 yacc.parse(s)
