@@ -193,7 +193,7 @@ def evalInst(p):
         elif p[0] == 'assign':
             names[p[1]] = evalExpr(p[2])
         elif p[0] == 'function':
-            names[p[1][0]] = p  # Enregistre la fonction sous son nom
+            names[p[1][0]] = p 
         elif p[0] == 'return':
             raise ReturnException(evalExpr(p[1]))
     else:
