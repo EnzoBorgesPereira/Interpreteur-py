@@ -4,9 +4,9 @@ reserved = {
     'print': 'PRINT',
     'if': 'IF',
     'else': 'ELSE',
-    'for': 'FOR',
     'while': 'WHILE',
-    'function': 'FUNCTION'
+    'function': 'FUNCTION',
+    'return': 'RETURN'
 }
 
 tokens = [
@@ -31,7 +31,7 @@ t_INFEG = r'<='
 t_EGALEGAL = r'=='
 t_LBRACE = r'\{'
 t_RBRACE = r'\}'
-t_COMMA = r'\,'
+t_COMMA = r','
 
 def t_NAME(t):
     r'[a-zA-Z_][a-zA-Z_0-9]*'
@@ -75,12 +75,13 @@ def p_bloc(p):
     '''bloc : bloc statement SEMI
             | statement SEMI'''
     if len(p) == 4:
-        if p[1][0] == 'bloc':
-            p[0] = ('bloc', p[1] , p[2])
-        else:
-            p[0] = ('bloc', p[1])
+        p[0] = ('bloc', p[1], p[2])
     else:
         p[0] = ('bloc', p[1])
+
+def p_statement_function_definition(p):
+    '''statement : function'''
+    p[0] = p[1]
 
 def p_statement_print(p):
     'statement : PRINT LPAREN expression RPAREN'
@@ -102,28 +103,34 @@ def p_statement_while(p):
     'statement : WHILE LPAREN expression RPAREN LBRACE bloc RBRACE'
     p[0] = ('while', p[3], p[6])
 
-def p_statement_for(p):
-    'statement : FOR LPAREN statement SEMI expression SEMI statement RPAREN LBRACE bloc RBRACE'
-    p[0] = ('for', p[3], p[5], p[7], p[10])
-
 def p_param(p):
     '''param : NAME
              | param COMMA NAME'''
     if len(p) == 2:  
-        p[0] = ("param", p[1])
+        p[0] = ('param', p[1])
     else:  
-        p[0] = ("param", p[1] , p[3])
+        p[0] = ('param', p[1], p[3])
+
+def p_param_call(p):
+    '''param_call : expression
+                  | param_call COMMA expression
+                  | empty'''
+    if len(p) == 2:
+        p[0] = ('param', p[1])
+    else:
+        p[0] = ('param', p[1], p[3])
+
+def p_statement_return(p):
+    'statement : RETURN expression'
+    p[0] = ('return', p[2])
 
 def p_statement_function(p):
-    '''statement : FUNCTION NAME LPAREN RPAREN LBRACE bloc RBRACE  
-                 | FUNCTION NAME LPAREN param RPAREN LBRACE bloc RBRACE 
-                 |'''
-    if (len(p)== 8):
-        p[0] = ('function',(p[2], p[6]))
-    elif(len(p)==9):
-        p[0] = ('function',(p[2], p[4], p[7]))
-    else:
-        p[0] = None
+    '''function : FUNCTION NAME LPAREN param RPAREN LBRACE bloc RBRACE'''
+    p[0] = ('function', (p[2], p[4], p[7]))
+
+def p_expression_function_call(p):
+    'expression : NAME LPAREN param_call RPAREN'
+    p[0] = ('call', p[1], p[3])
 
 def p_expression_binop(p):
     '''expression : expression PLUS expression
@@ -150,71 +157,109 @@ def p_expression_name(p):
     'expression : NAME'
     p[0] = p[1]
 
+def p_empty(p):
+    'empty :'
+    pass
+
 def p_error(p):
     print("Erreur de syntaxe !", p)
 
 import ply.yacc as yacc
 yacc.yacc()
 
+class ReturnException(Exception):
+    def __init__(self, value):
+        self.value = value
+
+def unpackParams(params):
+    if isinstance(params, tuple) and params[0] == 'param':
+        return unpackParams(params[1]) + unpackParams(params[2:]) if len(params) > 2 else [params[1]]
+    elif isinstance(params, tuple) and len(params) == 1:
+        return [params[0]]
+    elif params is None:
+        return []
+    else:
+        return [params]
+
 def evalInst(p):
-    if type(p) is tuple:
+    if isinstance(p, tuple):
         if p[0] == 'print':
             print(evalExpr(p[1]))
         elif p[0] == 'bloc':
-            for stmt in p[1]:
-                evalInst(stmt)
+            val = evalInst(p[1])
+            if len(p) > 2:
+                return evalInst(p[2])
+            return val
         elif p[0] == 'assign':
             names[p[1]] = evalExpr(p[2])
-        elif p[0] == 'if':
-            if evalExpr(p[1]):
-                evalInst(p[2])
-            elif p[3] is not None:
-                evalInst(p[3])
-        elif p[0] == 'while':
-            while evalExpr(p[1]):
-                evalInst(p[2])
-        elif p[0] == 'for':
-            evalInst(p[1])
-            while evalExpr(p[2]):
-                evalInst(p[4])
-                evalInst(p[3])
+        elif p[0] == 'function':
+            names[p[1][0]] = p  # Enregistre la fonction sous son nom
+        elif p[0] == 'return':
+            raise ReturnException(evalExpr(p[1]))
+    else:
+        print(f"Instruction inconnue : {p}")
 
 def evalExpr(t):
-    if type(t) is int:
+    if isinstance(t, int):
         return t
-    elif type(t) is str:
+    if isinstance(t, str):
         return names.get(t, 0)
-    elif type(t) is tuple:
-        op = t[0]
-        if op == '+':
-            return evalExpr(t[1]) + evalExpr(t[2])
-        elif op == '-':
-            return evalExpr(t[1]) - evalExpr(t[2])
-        elif op == '*':
-            return evalExpr(t[1]) * evalExpr(t[2])
-        elif op == '/':
-            return evalExpr(t[1]) / evalExpr(t[2])
-        elif op == '<':
-            return evalExpr(t[1]) < evalExpr(t[2])
-        elif op == '>':
-            return evalExpr(t[1]) > evalExpr(t[2])
-        elif op == '<=':
-            return evalExpr(t[1]) <= evalExpr(t[2])
-        elif op == '==':
-            return evalExpr(t[1]) == evalExpr(t[2])
-        elif op == 'AND':
-            return evalExpr(t[1]) and evalExpr(t[2])
-        elif op == 'OR':
-            return evalExpr(t[1]) or evalExpr(t[2])
+    if isinstance(t, tuple):
+        if t[0] == 'call':
+            return evalFunctionCall(t)
+        if t[0] in ('+', '-', '*', '/'):
+            return evalBinaryOp(t)
     return 0
 
+def evalBinaryOp(t):
+    left = evalExpr(t[1])
+    right = evalExpr(t[2])
+    if t[0] == '+':
+        return left + right
+    elif t[0] == '-':
+        return left - right
+    elif t[0] == '*':
+        return left * right
+    elif t[0] == '/':
+        return left // right 
+    return 0
+
+def evalFunctionCall(p):
+    global names
+
+    funcName = p[1]
+    funcDef = names.get(funcName)
+    if not funcDef:
+        print(f"Erreur : Fonction {funcName} non définie")
+        return
+
+    paramNames = unpackParams(funcDef[1][1]) 
+    paramValues = unpackParams(p[2]) 
+
+    if len(paramNames) != len(paramValues):
+        print(f"Erreur : Nombre de paramètres incorrect pour {funcName}")
+        return
+
+    previous_scope = names.copy()
+    localScope = dict(zip(paramNames, [evalExpr(val) for val in paramValues]))
+    names.update(localScope)
+
+    try:
+        return evalInst(funcDef[1][2])  
+    except ReturnException as e:
+        return e.value
+    finally:
+        names = previous_scope
+
 s = '''
-a = 1;
-b = 1;
-function carre(a,b){
+function carre(a, b) {
     print(a);
+    return a + b;
     print(b);
-    };
+};
+
+result = carre(2, 3);
+print(result);
 '''
 
 yacc.parse(s)
