@@ -105,10 +105,13 @@ def p_statement_while(p):
 
 def p_param(p):
     '''param : NAME
-             | param COMMA NAME'''
-    if len(p) == 2:  
+             | param COMMA NAME
+             | empty'''
+    if len(p) == 2 and p[1] == 'empty':
+        p[0] = None 
+    elif len(p) == 2:
         p[0] = ('param', p[1])
-    else:  
+    else:
         p[0] = ('param', p[1], p[3])
 
 def p_param_call(p):
@@ -256,6 +259,10 @@ function carre(a, b) {
     print(a);
     return a + b;
     print(b);
+};
+
+function boop() {
+    print(10);
 };
 
 result = carre(2, 3);
