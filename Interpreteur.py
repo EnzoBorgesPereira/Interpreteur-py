@@ -9,11 +9,9 @@ showExecutionStack = False
 if len(sys.argv) > 1 and sys.argv[1] == "--show-stack":
     showExecutionStack = True
 
-executionStack = []
-showExecutionStack = False  
-
-if len(sys.argv) > 1 and sys.argv[1] == "--show-stack":
-    showExecutionStack = True
+def log(message):
+    if showExecutionStack:
+        print(message)
 
 reserved = {
     'print': 'PRINT',
@@ -97,13 +95,6 @@ def display_executionStack():
             print(f"  Contexte {len(executionStack) - i}: {context}")
         print("--------------------------------------------------\n")
 
-def display_executionStack():
-    if showExecutionStack:
-        print("\nPile d'exécution :")
-        for i, context in enumerate(reversed(executionStack)):
-            print(f"  Contexte {len(executionStack) - i}: {context}")
-        print("--------------------------------------------------\n")
-
 def p_start(p):
     'start : bloc'
     print(p[1])
@@ -116,12 +107,7 @@ def p_bloc(p):
     if len(p) == 4:
         p[0] = ('bloc', p[1], p[2])
     else:
-        # bloc étendu avec un nouveau statement
-        p[0] = ('bloc', p[1], p[2])
-
-def p_statement_function_definition(p):
-    '''statement : function'''
-    p[0] = p[1]
+        p[0] = p[1]
 
 def p_statement_function_definition(p):
     '''statement : function'''
@@ -188,7 +174,7 @@ def p_expression_function_call(p):
 
 def p_expression_string(p):
     'expression : STRING'
-    p[0] = p[1]
+    p[0] = f'"{p[1]}"'  # Ajoute les guillemets pour les marquer comme littérales
 
 def p_statement_expr(p):
     'statement : expression'
@@ -233,7 +219,6 @@ def p_empty(p):
 
 def p_expression_uminus(p):
     'expression : MINUS expression %prec UMINUS'
-    #  -expr => 0 - expr
     p[0] = ('-', 0, p[2])
 
 def p_error(p):
@@ -269,55 +254,99 @@ def handle_elif_else(node):
 
 def evalInst(p):
     if isinstance(p, tuple):
-        if p[0] == 'print':
-            print(evalExpr(p[1]))  
-        elif p[0] == 'bloc':
+        tag = p[0]
+        log(f"Exécution de l'instruction : {p}")
+        if tag == 'print':
+            print(evalExpr(p[1]))
+        elif tag == 'bloc':
             val = evalInst(p[1])
             if len(p) > 2:
                 return evalInst(p[2])
             return val
-        elif p[0] == 'assign':
+        elif tag == 'assign':
+            value = evalExpr(p[2])
+            log(f"Affectation : {p[1]} = {value}")
             if executionStack:
-                executionStack[-1][p[1]] = evalExpr(p[2])
+                executionStack[-1][p[1]] = value
             else:
-                names[p[1]] = evalExpr(p[2])
-        elif p[0] == 'function':
+                names[p[1]] = value
+        elif tag == 'function':
             names[p[1][0]] = p 
-        elif p[0] == 'return':
+        elif tag == 'return':
             raise ReturnException(evalExpr(p[1]))
+        elif tag == 'if':  
+            if evalExpr(p[1]):
+                evalInst(p[2])
+            else:
+                handle_elif_else(p[3])
+        elif tag == 'while':  
+            while evalExpr(p[1]):
+                evalInst(p[2])
+        elif tag == 'for':  
+            evalInst(p[1])  
+            while evalExpr(p[2]):
+                evalInst(p[4]) 
+                evalInst(p[3])  
     else:
-        print(f"Instruction inconnue : {p}")
+        log(f"Instruction inconnue : {p}")
 
 def evalExpr(t):
-    if isinstance(t, int):  
+    if isinstance(t, int):
         return t
-    if isinstance(t, str):  
-        if t in names:  
-            return names[t]
-        for context in reversed(executionStack):  
+    elif isinstance(t, str):
+        # Si c'est une chaîne littérale (marquée par des guillemets), retourne-la directement
+        if t.startswith('"') and t.endswith('"'):
+            return t[1:-1]  # Supprime les guillemets
+        # Sinon, traite comme une variable
+        for context in reversed(executionStack):
             if t in context:
                 return context[t]
-        return t  
-    if isinstance(t, tuple):  
-        if t[0] == 'call':
+        return names.get(t, 0)
+    elif isinstance(t, tuple):
+        op = t[0]
+        if op in ['+', '-', '*', '/', '<', '>', '<=', '==', 'AND', 'OR']:
+            left = evalExpr(t[1])
+            right = evalExpr(t[2])
+            if op == '+':
+                return left + right
+            elif op == '-':
+                return left - right
+            elif op == '*':
+                return left * right
+            elif op == '/':
+                return left // right
+            elif op == '<':
+                return left < right
+            elif op == '>':
+                return left > right
+            elif op == '<=':
+                return left <= right
+            elif op == '==':
+                return left == right
+            elif op == 'AND':
+                return left and right
+            elif op == 'OR':
+                return left or right
+        elif op == 'call':
             return evalFunctionCall(t)
-        if t[0] in ('+', '-', '*', '/'):
-            return evalBinaryOp(t)
+        elif op == '++':
+            val = evalExpr(t[1])
+            if isinstance(t[1], str):
+                names[t[1]] = val + 1
+                return val
+            else:
+                raise ValueError("++ s'applique uniquement sur une variable")
+        elif op == '--':
+            val = evalExpr(t[1])
+            if isinstance(t[1], str):
+                names[t[1]] = val - 1
+                return val
+            else:
+                raise ValueError("-- s'applique uniquement sur une variable")
+        elif op == '-':
+            return -evalExpr(t[1])
     return 0
-
-def evalBinaryOp(t):
-    left = evalExpr(t[1])
-    right = evalExpr(t[2])
-    if t[0] == '+':
-        return left + right
-    elif t[0] == '-':
-        return left - right
-    elif t[0] == '*':
-        return left * right
-    elif t[0] == '/':
-        return left // right 
-    return 0
-
+    
 def evalFunctionCall(p):
     global executionStack
 
@@ -337,37 +366,37 @@ def evalFunctionCall(p):
     localScope = dict(zip(paramNames, [evalExpr(val) for val in paramValues]))
     executionStack.append(localScope)
 
-    if showExecutionStack:  # Affiche la pile après l'ajout
+    if showExecutionStack:
         display_executionStack()
 
     try:
-        return evalInst(funcDef[1][2])
+        result = evalInst(funcDef[1][2]) 
+        log(f"Retour de la fonction {funcName} : {result}")
+        return result
     except ReturnException as e:
+        log(f"Retour explicite de la fonction {funcName} : {e.value}")
         return e.value
     finally:
         executionStack.pop()
-
-        if showExecutionStack:  # Affiche la pile après le retrait
+        if showExecutionStack:
             display_executionStack()
-import sys
-
-if len(sys.argv) > 1 and sys.argv[1] == "--show-stack":
-    showExecutionStack = True
 
 s = '''
 function carre(a) {
+    print("Calculating square of");
     print(a);
     return a * a;
 };
 
 function sumSquares(x, y) {
-    print("Calculating sum of squares");
+    print("Calculating sum of squares:");
     result1 = carre(x);
     result2 = carre(y);
     return result1 + result2;
 };
 
 result = sumSquares(2, 3);
+print("Final result:");
 print(result);
 '''
 yacc.parse(s)
