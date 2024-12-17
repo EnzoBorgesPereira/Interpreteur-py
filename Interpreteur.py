@@ -1,5 +1,8 @@
 from genereTreeGraphviz2 import printTreeGraph
 
+executionStack = []
+showExecutionStack = False  
+
 reserved = {
     'print': 'PRINT',
     'if': 'IF',
@@ -12,7 +15,7 @@ reserved = {
 tokens = [
     'NUMBER', 'MINUS', 'PLUS', 'TIMES', 'DIVIDE', 'LPAREN',
     'RPAREN', 'OR', 'AND', 'SEMI', 'EGAL', 'NAME', 'INF', 'SUP',
-    'EGALEGAL', 'INFEG', 'LBRACE', 'RBRACE', 'COMMA'
+    'EGALEGAL', 'INFEG', 'LBRACE', 'RBRACE', 'COMMA', 'STRING'
 ] + list(reserved.values())
 
 t_PLUS = r'\+'
@@ -43,6 +46,11 @@ def t_NUMBER(t):
     t.value = int(t.value)
     return t
 
+def t_STRING(t):
+    r'"([^\\"]|\\.)*"'
+    t.value = t.value[1:-1]  
+    return t
+
 t_ignore = " \t"
 
 def t_newline(t):
@@ -64,6 +72,13 @@ precedence = (
     ('left', 'PLUS', 'MINUS'),
     ('left', 'TIMES', 'DIVIDE'),
 )
+
+def display_executionStack():
+    if showExecutionStack:
+        print("Pile d'exécution :")
+        for i, context in enumerate(reversed(executionStack)):
+            print(f"  Contexte {len(executionStack) - i}: {context}")
+        print("--------------------------------------------------")
 
 def p_start(p):
     'start : bloc'
@@ -135,6 +150,10 @@ def p_expression_function_call(p):
     'expression : NAME LPAREN param_call RPAREN'
     p[0] = ('call', p[1], p[3])
 
+def p_expression_string(p):
+    'expression : STRING'
+    p[0] = p[1]
+
 def p_expression_binop(p):
     '''expression : expression PLUS expression
                   | expression MINUS expression
@@ -187,14 +206,17 @@ def unpackParams(params):
 def evalInst(p):
     if isinstance(p, tuple):
         if p[0] == 'print':
-            print(evalExpr(p[1]))
+            print(evalExpr(p[1]))  
         elif p[0] == 'bloc':
             val = evalInst(p[1])
             if len(p) > 2:
                 return evalInst(p[2])
             return val
         elif p[0] == 'assign':
-            names[p[1]] = evalExpr(p[2])
+            if executionStack:
+                executionStack[-1][p[1]] = evalExpr(p[2])
+            else:
+                names[p[1]] = evalExpr(p[2])
         elif p[0] == 'function':
             names[p[1][0]] = p 
         elif p[0] == 'return':
@@ -203,11 +225,17 @@ def evalInst(p):
         print(f"Instruction inconnue : {p}")
 
 def evalExpr(t):
-    if isinstance(t, int):
+    if isinstance(t, int):  # Si c'est un entier, retourne-le directement
         return t
-    if isinstance(t, str):
-        return names.get(t, 0)
-    if isinstance(t, tuple):
+    if isinstance(t, str):  
+        # Vérifie si c'est une chaîne littérale ou une variable
+        if t in names:  # Si c'est une variable globale
+            return names[t]
+        for context in reversed(executionStack):  # Cherche dans la pile
+            if t in context:
+                return context[t]
+        return t  # Si aucune variable ne correspond, retourne la chaîne telle quelle
+    if isinstance(t, tuple):  # Évalue les tuples (expressions complexes)
         if t[0] == 'call':
             return evalFunctionCall(t)
         if t[0] in ('+', '-', '*', '/'):
@@ -228,7 +256,7 @@ def evalBinaryOp(t):
     return 0
 
 def evalFunctionCall(p):
-    global names
+    global executionStack
 
     funcName = p[1]
     funcDef = names.get(funcName)
@@ -243,29 +271,38 @@ def evalFunctionCall(p):
         print(f"Erreur : Nombre de paramètres incorrect pour {funcName}")
         return
 
-    previous_scope = names.copy()
     localScope = dict(zip(paramNames, [evalExpr(val) for val in paramValues]))
-    names.update(localScope)
+    executionStack.append(localScope)
+
+    display_executionStack()
 
     try:
-        return evalInst(funcDef[1][2])  
+        return evalInst(funcDef[1][2])
     except ReturnException as e:
         return e.value
     finally:
-        names = previous_scope
+        executionStack.pop()
+        display_executionStack()
+
+import sys
+
+if len(sys.argv) > 1 and sys.argv[1] == "--show-stack":
+    showExecutionStack = True
 
 s = '''
-function carre(a, b) {
+function carre(a) {
     print(a);
-    return a + b;
-    print(b);
+    return a * a;
 };
 
-function boop() {
-    print(10);
+function sumSquares(x, y) {
+    print("Calculating sum of squares");
+    result1 = carre(x);
+    result2 = carre(y);
+    return result1 + result2;
 };
 
-result = carre(2, 3);
+result = sumSquares(2, 3);
 print(result);
 '''
 

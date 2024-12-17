@@ -6,9 +6,9 @@ _tabversion = '3.10'
 
 _lr_method = 'LALR'
 
-_lr_signature = 'leftORleftANDnonassocINFINFEGEGALEGALSUPleftPLUSMINUSleftTIMESDIVIDEAND COMMA DIVIDE EGAL EGALEGAL ELSE FUNCTION IF INF INFEG LBRACE LPAREN MINUS NAME NUMBER OR PLUS PRINT RBRACE RETURN RPAREN SEMI SUP TIMES WHILEstart : blocbloc : bloc statement SEMI\n            | statement SEMIstatement : functionstatement : PRINT LPAREN expression RPARENstatement : NAME EGAL expressionstatement : IF LPAREN expression RPAREN LBRACE bloc RBRACE\n                 | IF LPAREN expression RPAREN LBRACE bloc RBRACE ELSE LBRACE bloc RBRACEstatement : WHILE LPAREN expression RPAREN LBRACE bloc RBRACEparam : NAME\n             | param COMMA NAME\n             | emptyparam_call : expression\n                  | param_call COMMA expression\n                  | emptystatement : RETURN expressionfunction : FUNCTION NAME LPAREN param RPAREN LBRACE bloc RBRACEexpression : NAME LPAREN param_call RPARENexpression : expression PLUS expression\n                  | expression MINUS expression\n                  | expression TIMES expression\n                  | expression DIVIDE expression\n                  | expression INF expression\n                  | expression INFEG expression\n                  | expression EGALEGAL expression\n                  | expression SUP expression\n                  | expression AND expression\n                  | expression OR expressionexpression : LPAREN expression RPARENexpression : NUMBERexpression : NAMEempty :'
+_lr_signature = 'leftORleftANDnonassocINFINFEGEGALEGALSUPleftPLUSMINUSleftTIMESDIVIDEAND COMMA DIVIDE EGAL EGALEGAL ELSE FUNCTION IF INF INFEG LBRACE LPAREN MINUS NAME NUMBER OR PLUS PRINT RBRACE RETURN RPAREN SEMI STRING SUP TIMES WHILEstart : blocbloc : bloc statement SEMI\n            | statement SEMIstatement : functionstatement : PRINT LPAREN expression RPARENstatement : NAME EGAL expressionstatement : IF LPAREN expression RPAREN LBRACE bloc RBRACE\n                 | IF LPAREN expression RPAREN LBRACE bloc RBRACE ELSE LBRACE bloc RBRACEstatement : WHILE LPAREN expression RPAREN LBRACE bloc RBRACEparam : NAME\n             | param COMMA NAME\n             | emptyparam_call : expression\n                  | param_call COMMA expression\n                  | emptystatement : RETURN expressionfunction : FUNCTION NAME LPAREN param RPAREN LBRACE bloc RBRACEexpression : NAME LPAREN param_call RPARENexpression : STRINGexpression : expression PLUS expression\n                  | expression MINUS expression\n                  | expression TIMES expression\n                  | expression DIVIDE expression\n                  | expression INF expression\n                  | expression INFEG expression\n                  | expression EGALEGAL expression\n                  | expression SUP expression\n                  | expression AND expression\n                  | expression OR expressionexpression : LPAREN expression RPARENexpression : NUMBERexpression : NAMEempty :'
     
-_lr_action_items = {'PRINT':([0,2,12,22,60,61,66,67,69,73,76,77,],[5,5,-3,-2,5,5,5,5,5,5,5,5,]),'NAME':([0,2,9,10,12,13,14,15,16,19,22,27,28,29,30,31,32,33,34,35,36,37,39,60,61,63,65,66,67,69,73,76,77,],[6,6,18,21,-3,18,18,18,18,18,-2,18,18,18,18,18,18,18,18,18,18,18,57,6,6,18,70,6,6,6,6,6,6,]),'IF':([0,2,12,22,60,61,66,67,69,73,76,77,],[7,7,-3,-2,7,7,7,7,7,7,7,7,]),'WHILE':([0,2,12,22,60,61,66,67,69,73,76,77,],[8,8,-3,-2,8,8,8,8,8,8,8,8,]),'RETURN':([0,2,12,22,60,61,66,67,69,73,76,77,],[9,9,-3,-2,9,9,9,9,9,9,9,9,]),'FUNCTION':([0,2,12,22,60,61,66,67,69,73,76,77,],[10,10,-3,-2,10,10,10,10,10,10,10,10,]),'$end':([1,2,12,22,],[0,-1,-3,-2,]),'SEMI':([3,4,11,17,18,20,24,40,43,44,45,46,47,48,49,50,51,52,56,62,71,72,75,78,],[12,-4,22,-16,-31,-30,-6,-5,-19,-20,-21,-22,-23,-24,-25,-26,-27,-28,-29,-18,-7,-9,-17,-8,]),'LPAREN':([5,7,8,9,13,14,15,16,18,19,21,27,28,29,30,31,32,33,34,35,36,37,63,],[13,15,16,19,19,19,19,19,37,19,39,19,19,19,19,19,19,19,19,19,19,19,19,]),'EGAL':([6,],[14,]),'NUMBER':([9,13,14,15,16,19,27,28,29,30,31,32,33,34,35,36,37,63,],[20,20,20,20,20,20,20,20,20,20,20,20,20,20,20,20,20,20,]),'RBRACE':([12,22,66,67,73,77,],[-3,-2,71,72,75,78,]),'PLUS':([17,18,20,23,24,25,26,38,43,44,45,46,47,48,49,50,51,52,54,56,62,68,],[27,-31,-30,27,27,27,27,27,-19,-20,-21,-22,27,27,27,27,27,27,27,-29,-18,27,]),'MINUS':([17,18,20,23,24,25,26,38,43,44,45,46,47,48,49,50,51,52,54,56,62,68,],[28,-31,-30,28,28,28,28,28,-19,-20,-21,-22,28,28,28,28,28,28,28,-29,-18,28,]),'TIMES':([17,18,20,23,24,25,26,38,43,44,45,46,47,48,49,50,51,52,54,56,62,68,],[29,-31,-30,29,29,29,29,29,29,29,-21,-22,29,29,29,29,29,29,29,-29,-18,29,]),'DIVIDE':([17,18,20,23,24,25,26,38,43,44,45,46,47,48,49,50,51,52,54,56,62,68,],[30,-31,-30,30,30,30,30,30,30,30,-21,-22,30,30,30,30,30,30,30,-29,-18,30,]),'INF':([17,18,20,23,24,25,26,38,43,44,45,46,47,48,49,50,51,52,54,56,62,68,],[31,-31,-30,31,31,31,31,31,-19,-20,-21,-22,None,None,None,None,31,31,31,-29,-18,31,]),'INFEG':([17,18,20,23,24,25,26,38,43,44,45,46,47,48,49,50,51,52,54,56,62,68,],[32,-31,-30,32,32,32,32,32,-19,-20,-21,-22,None,None,None,None,32,32,32,-29,-18,32,]),'EGALEGAL':([17,18,20,23,24,25,26,38,43,44,45,46,47,48,49,50,51,52,54,56,62,68,],[33,-31,-30,33,33,33,33,33,-19,-20,-21,-22,None,None,None,None,33,33,33,-29,-18,33,]),'SUP':([17,18,20,23,24,25,26,38,43,44,45,46,47,48,49,50,51,52,54,56,62,68,],[34,-31,-30,34,34,34,34,34,-19,-20,-21,-22,None,None,None,None,34,34,34,-29,-18,34,]),'AND':([17,18,20,23,24,25,26,38,43,44,45,46,47,48,49,50,51,52,54,56,62,68,],[35,-31,-30,35,35,35,35,35,-19,-20,-21,-22,-23,-24,-25,-26,-27,35,35,-29,-18,35,]),'OR':([17,18,20,23,24,25,26,38,43,44,45,46,47,48,49,50,51,52,54,56,62,68,],[36,-31,-30,36,36,36,36,36,-19,-20,-21,-22,-23,-24,-25,-26,-27,-28,36,-29,-18,36,]),'RPAREN':([18,20,23,25,26,37,38,39,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,62,68,70,],[-31,-30,40,41,42,-32,56,-32,-19,-20,-21,-22,-23,-24,-25,-26,-27,-28,62,-13,-15,-29,-10,64,-12,-18,-14,-11,]),'COMMA':([18,20,37,39,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,62,68,70,],[-31,-30,-32,-32,-19,-20,-21,-22,-23,-24,-25,-26,-27,-28,63,-13,-15,-29,-10,65,-12,-18,-14,-11,]),'LBRACE':([41,42,64,74,],[60,61,69,76,]),'ELSE':([71,],[74,]),}
+_lr_action_items = {'PRINT':([0,2,12,23,61,62,67,68,70,74,77,78,],[5,5,-3,-2,5,5,5,5,5,5,5,5,]),'NAME':([0,2,9,10,12,13,14,15,16,19,23,28,29,30,31,32,33,34,35,36,37,38,40,61,62,64,66,67,68,70,74,77,78,],[6,6,18,22,-3,18,18,18,18,18,-2,18,18,18,18,18,18,18,18,18,18,18,58,6,6,18,71,6,6,6,6,6,6,]),'IF':([0,2,12,23,61,62,67,68,70,74,77,78,],[7,7,-3,-2,7,7,7,7,7,7,7,7,]),'WHILE':([0,2,12,23,61,62,67,68,70,74,77,78,],[8,8,-3,-2,8,8,8,8,8,8,8,8,]),'RETURN':([0,2,12,23,61,62,67,68,70,74,77,78,],[9,9,-3,-2,9,9,9,9,9,9,9,9,]),'FUNCTION':([0,2,12,23,61,62,67,68,70,74,77,78,],[10,10,-3,-2,10,10,10,10,10,10,10,10,]),'$end':([1,2,12,23,],[0,-1,-3,-2,]),'SEMI':([3,4,11,17,18,20,21,25,41,44,45,46,47,48,49,50,51,52,53,57,63,72,73,76,79,],[12,-4,23,-16,-32,-19,-31,-6,-5,-20,-21,-22,-23,-24,-25,-26,-27,-28,-29,-30,-18,-7,-9,-17,-8,]),'LPAREN':([5,7,8,9,13,14,15,16,18,19,22,28,29,30,31,32,33,34,35,36,37,38,64,],[13,15,16,19,19,19,19,19,38,19,40,19,19,19,19,19,19,19,19,19,19,19,19,]),'EGAL':([6,],[14,]),'STRING':([9,13,14,15,16,19,28,29,30,31,32,33,34,35,36,37,38,64,],[20,20,20,20,20,20,20,20,20,20,20,20,20,20,20,20,20,20,]),'NUMBER':([9,13,14,15,16,19,28,29,30,31,32,33,34,35,36,37,38,64,],[21,21,21,21,21,21,21,21,21,21,21,21,21,21,21,21,21,21,]),'RBRACE':([12,23,67,68,74,78,],[-3,-2,72,73,76,79,]),'PLUS':([17,18,20,21,24,25,26,27,39,44,45,46,47,48,49,50,51,52,53,55,57,63,69,],[28,-32,-19,-31,28,28,28,28,28,-20,-21,-22,-23,28,28,28,28,28,28,28,-30,-18,28,]),'MINUS':([17,18,20,21,24,25,26,27,39,44,45,46,47,48,49,50,51,52,53,55,57,63,69,],[29,-32,-19,-31,29,29,29,29,29,-20,-21,-22,-23,29,29,29,29,29,29,29,-30,-18,29,]),'TIMES':([17,18,20,21,24,25,26,27,39,44,45,46,47,48,49,50,51,52,53,55,57,63,69,],[30,-32,-19,-31,30,30,30,30,30,30,30,-22,-23,30,30,30,30,30,30,30,-30,-18,30,]),'DIVIDE':([17,18,20,21,24,25,26,27,39,44,45,46,47,48,49,50,51,52,53,55,57,63,69,],[31,-32,-19,-31,31,31,31,31,31,31,31,-22,-23,31,31,31,31,31,31,31,-30,-18,31,]),'INF':([17,18,20,21,24,25,26,27,39,44,45,46,47,48,49,50,51,52,53,55,57,63,69,],[32,-32,-19,-31,32,32,32,32,32,-20,-21,-22,-23,None,None,None,None,32,32,32,-30,-18,32,]),'INFEG':([17,18,20,21,24,25,26,27,39,44,45,46,47,48,49,50,51,52,53,55,57,63,69,],[33,-32,-19,-31,33,33,33,33,33,-20,-21,-22,-23,None,None,None,None,33,33,33,-30,-18,33,]),'EGALEGAL':([17,18,20,21,24,25,26,27,39,44,45,46,47,48,49,50,51,52,53,55,57,63,69,],[34,-32,-19,-31,34,34,34,34,34,-20,-21,-22,-23,None,None,None,None,34,34,34,-30,-18,34,]),'SUP':([17,18,20,21,24,25,26,27,39,44,45,46,47,48,49,50,51,52,53,55,57,63,69,],[35,-32,-19,-31,35,35,35,35,35,-20,-21,-22,-23,None,None,None,None,35,35,35,-30,-18,35,]),'AND':([17,18,20,21,24,25,26,27,39,44,45,46,47,48,49,50,51,52,53,55,57,63,69,],[36,-32,-19,-31,36,36,36,36,36,-20,-21,-22,-23,-24,-25,-26,-27,-28,36,36,-30,-18,36,]),'OR':([17,18,20,21,24,25,26,27,39,44,45,46,47,48,49,50,51,52,53,55,57,63,69,],[37,-32,-19,-31,37,37,37,37,37,-20,-21,-22,-23,-24,-25,-26,-27,-28,-29,37,-30,-18,37,]),'RPAREN':([18,20,21,24,26,27,38,39,40,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,63,69,71,],[-32,-19,-31,41,42,43,-33,57,-33,-20,-21,-22,-23,-24,-25,-26,-27,-28,-29,63,-13,-15,-30,-10,65,-12,-18,-14,-11,]),'COMMA':([18,20,21,38,40,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,63,69,71,],[-32,-19,-31,-33,-33,-20,-21,-22,-23,-24,-25,-26,-27,-28,-29,64,-13,-15,-30,-10,66,-12,-18,-14,-11,]),'LBRACE':([42,43,65,75,],[61,62,70,77,]),'ELSE':([72,],[75,]),}
 
 _lr_action = {}
 for _k, _v in _lr_action_items.items():
@@ -17,7 +17,7 @@ for _k, _v in _lr_action_items.items():
       _lr_action[_x][_k] = _y
 del _lr_action_items
 
-_lr_goto_items = {'start':([0,],[1,]),'bloc':([0,60,61,69,76,],[2,66,67,73,77,]),'statement':([0,2,60,61,66,67,69,73,76,77,],[3,11,3,3,11,11,3,11,3,11,]),'function':([0,2,60,61,66,67,69,73,76,77,],[4,4,4,4,4,4,4,4,4,4,]),'expression':([9,13,14,15,16,19,27,28,29,30,31,32,33,34,35,36,37,63,],[17,23,24,25,26,38,43,44,45,46,47,48,49,50,51,52,54,68,]),'param_call':([37,],[53,]),'empty':([37,39,],[55,59,]),'param':([39,],[58,]),}
+_lr_goto_items = {'start':([0,],[1,]),'bloc':([0,61,62,70,77,],[2,67,68,74,78,]),'statement':([0,2,61,62,67,68,70,74,77,78,],[3,11,3,3,11,11,3,11,3,11,]),'function':([0,2,61,62,67,68,70,74,77,78,],[4,4,4,4,4,4,4,4,4,4,]),'expression':([9,13,14,15,16,19,28,29,30,31,32,33,34,35,36,37,38,64,],[17,24,25,26,27,39,44,45,46,47,48,49,50,51,52,53,55,69,]),'param_call':([38,],[54,]),'empty':([38,40,],[56,60,]),'param':([40,],[59,]),}
 
 _lr_goto = {}
 for _k, _v in _lr_goto_items.items():
@@ -27,36 +27,37 @@ for _k, _v in _lr_goto_items.items():
 del _lr_goto_items
 _lr_productions = [
   ("S' -> start","S'",1,None,None,None),
-  ('start -> bloc','start',1,'p_start','Interpreteur.py',69),
-  ('bloc -> bloc statement SEMI','bloc',3,'p_bloc','Interpreteur.py',75),
-  ('bloc -> statement SEMI','bloc',2,'p_bloc','Interpreteur.py',76),
-  ('statement -> function','statement',1,'p_statement_function_definition','Interpreteur.py',83),
-  ('statement -> PRINT LPAREN expression RPAREN','statement',4,'p_statement_print','Interpreteur.py',87),
-  ('statement -> NAME EGAL expression','statement',3,'p_statement_assign','Interpreteur.py',91),
-  ('statement -> IF LPAREN expression RPAREN LBRACE bloc RBRACE','statement',7,'p_statement_if','Interpreteur.py',95),
-  ('statement -> IF LPAREN expression RPAREN LBRACE bloc RBRACE ELSE LBRACE bloc RBRACE','statement',11,'p_statement_if','Interpreteur.py',96),
-  ('statement -> WHILE LPAREN expression RPAREN LBRACE bloc RBRACE','statement',7,'p_statement_while','Interpreteur.py',103),
-  ('param -> NAME','param',1,'p_param','Interpreteur.py',107),
-  ('param -> param COMMA NAME','param',3,'p_param','Interpreteur.py',108),
-  ('param -> empty','param',1,'p_param','Interpreteur.py',109),
-  ('param_call -> expression','param_call',1,'p_param_call','Interpreteur.py',118),
-  ('param_call -> param_call COMMA expression','param_call',3,'p_param_call','Interpreteur.py',119),
-  ('param_call -> empty','param_call',1,'p_param_call','Interpreteur.py',120),
-  ('statement -> RETURN expression','statement',2,'p_statement_return','Interpreteur.py',127),
-  ('function -> FUNCTION NAME LPAREN param RPAREN LBRACE bloc RBRACE','function',8,'p_statement_function','Interpreteur.py',131),
-  ('expression -> NAME LPAREN param_call RPAREN','expression',4,'p_expression_function_call','Interpreteur.py',135),
-  ('expression -> expression PLUS expression','expression',3,'p_expression_binop','Interpreteur.py',139),
-  ('expression -> expression MINUS expression','expression',3,'p_expression_binop','Interpreteur.py',140),
-  ('expression -> expression TIMES expression','expression',3,'p_expression_binop','Interpreteur.py',141),
-  ('expression -> expression DIVIDE expression','expression',3,'p_expression_binop','Interpreteur.py',142),
-  ('expression -> expression INF expression','expression',3,'p_expression_binop','Interpreteur.py',143),
-  ('expression -> expression INFEG expression','expression',3,'p_expression_binop','Interpreteur.py',144),
-  ('expression -> expression EGALEGAL expression','expression',3,'p_expression_binop','Interpreteur.py',145),
-  ('expression -> expression SUP expression','expression',3,'p_expression_binop','Interpreteur.py',146),
-  ('expression -> expression AND expression','expression',3,'p_expression_binop','Interpreteur.py',147),
-  ('expression -> expression OR expression','expression',3,'p_expression_binop','Interpreteur.py',148),
-  ('expression -> LPAREN expression RPAREN','expression',3,'p_expression_group','Interpreteur.py',152),
-  ('expression -> NUMBER','expression',1,'p_expression_number','Interpreteur.py',156),
-  ('expression -> NAME','expression',1,'p_expression_name','Interpreteur.py',160),
-  ('empty -> <empty>','empty',0,'p_empty','Interpreteur.py',164),
+  ('start -> bloc','start',1,'p_start','Interpreteur.py',84),
+  ('bloc -> bloc statement SEMI','bloc',3,'p_bloc','Interpreteur.py',90),
+  ('bloc -> statement SEMI','bloc',2,'p_bloc','Interpreteur.py',91),
+  ('statement -> function','statement',1,'p_statement_function_definition','Interpreteur.py',98),
+  ('statement -> PRINT LPAREN expression RPAREN','statement',4,'p_statement_print','Interpreteur.py',102),
+  ('statement -> NAME EGAL expression','statement',3,'p_statement_assign','Interpreteur.py',106),
+  ('statement -> IF LPAREN expression RPAREN LBRACE bloc RBRACE','statement',7,'p_statement_if','Interpreteur.py',110),
+  ('statement -> IF LPAREN expression RPAREN LBRACE bloc RBRACE ELSE LBRACE bloc RBRACE','statement',11,'p_statement_if','Interpreteur.py',111),
+  ('statement -> WHILE LPAREN expression RPAREN LBRACE bloc RBRACE','statement',7,'p_statement_while','Interpreteur.py',118),
+  ('param -> NAME','param',1,'p_param','Interpreteur.py',122),
+  ('param -> param COMMA NAME','param',3,'p_param','Interpreteur.py',123),
+  ('param -> empty','param',1,'p_param','Interpreteur.py',124),
+  ('param_call -> expression','param_call',1,'p_param_call','Interpreteur.py',133),
+  ('param_call -> param_call COMMA expression','param_call',3,'p_param_call','Interpreteur.py',134),
+  ('param_call -> empty','param_call',1,'p_param_call','Interpreteur.py',135),
+  ('statement -> RETURN expression','statement',2,'p_statement_return','Interpreteur.py',142),
+  ('function -> FUNCTION NAME LPAREN param RPAREN LBRACE bloc RBRACE','function',8,'p_statement_function','Interpreteur.py',146),
+  ('expression -> NAME LPAREN param_call RPAREN','expression',4,'p_expression_function_call','Interpreteur.py',150),
+  ('expression -> STRING','expression',1,'p_expression_string','Interpreteur.py',154),
+  ('expression -> expression PLUS expression','expression',3,'p_expression_binop','Interpreteur.py',158),
+  ('expression -> expression MINUS expression','expression',3,'p_expression_binop','Interpreteur.py',159),
+  ('expression -> expression TIMES expression','expression',3,'p_expression_binop','Interpreteur.py',160),
+  ('expression -> expression DIVIDE expression','expression',3,'p_expression_binop','Interpreteur.py',161),
+  ('expression -> expression INF expression','expression',3,'p_expression_binop','Interpreteur.py',162),
+  ('expression -> expression INFEG expression','expression',3,'p_expression_binop','Interpreteur.py',163),
+  ('expression -> expression EGALEGAL expression','expression',3,'p_expression_binop','Interpreteur.py',164),
+  ('expression -> expression SUP expression','expression',3,'p_expression_binop','Interpreteur.py',165),
+  ('expression -> expression AND expression','expression',3,'p_expression_binop','Interpreteur.py',166),
+  ('expression -> expression OR expression','expression',3,'p_expression_binop','Interpreteur.py',167),
+  ('expression -> LPAREN expression RPAREN','expression',3,'p_expression_group','Interpreteur.py',171),
+  ('expression -> NUMBER','expression',1,'p_expression_number','Interpreteur.py',175),
+  ('expression -> NAME','expression',1,'p_expression_name','Interpreteur.py',179),
+  ('empty -> <empty>','empty',0,'p_empty','Interpreteur.py',183),
 ]
