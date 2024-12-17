@@ -229,17 +229,16 @@ def evalInst(p):
         print(f"Instruction inconnue : {p}")
 
 def evalExpr(t):
-    if isinstance(t, int):  # Si c'est un entier, retourne-le directement
+    if isinstance(t, int):  
         return t
     if isinstance(t, str):  
-        # Vérifie si c'est une chaîne littérale ou une variable
-        if t in names:  # Si c'est une variable globale
+        if t in names:  
             return names[t]
-        for context in reversed(executionStack):  # Cherche dans la pile
+        for context in reversed(executionStack):  
             if t in context:
                 return context[t]
-        return t  # Si aucune variable ne correspond, retourne la chaîne telle quelle
-    if isinstance(t, tuple):  # Évalue les tuples (expressions complexes)
+        return t  
+    if isinstance(t, tuple):  
         if t[0] == 'call':
             return evalFunctionCall(t)
         if t[0] in ('+', '-', '*', '/'):
