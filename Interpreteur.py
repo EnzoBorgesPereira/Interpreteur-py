@@ -1,7 +1,11 @@
+import sys
 from genereTreeGraphviz2 import printTreeGraph
 
 executionStack = []
 showExecutionStack = False  
+
+if len(sys.argv) > 1 and sys.argv[1] == "--show-stack":
+    showExecutionStack = True
 
 reserved = {
     'print': 'PRINT',
@@ -75,10 +79,10 @@ precedence = (
 
 def display_executionStack():
     if showExecutionStack:
-        print("Pile d'exécution :")
+        print("\nPile d'exécution :")
         for i, context in enumerate(reversed(executionStack)):
             print(f"  Contexte {len(executionStack) - i}: {context}")
-        print("--------------------------------------------------")
+        print("--------------------------------------------------\n")
 
 def p_start(p):
     'start : bloc'
@@ -274,7 +278,8 @@ def evalFunctionCall(p):
     localScope = dict(zip(paramNames, [evalExpr(val) for val in paramValues]))
     executionStack.append(localScope)
 
-    display_executionStack()
+    if showExecutionStack:  # Affiche la pile après l'ajout
+        display_executionStack()
 
     try:
         return evalInst(funcDef[1][2])
@@ -282,8 +287,9 @@ def evalFunctionCall(p):
         return e.value
     finally:
         executionStack.pop()
-        display_executionStack()
 
+        if showExecutionStack:  # Affiche la pile après le retrait
+            display_executionStack()
 import sys
 
 if len(sys.argv) > 1 and sys.argv[1] == "--show-stack":
