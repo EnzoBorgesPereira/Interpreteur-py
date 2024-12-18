@@ -1,16 +1,64 @@
-while (x < 5) {
-    x++;
-    print(x);
-};
+print("Starting all-in-one test");
 
-for (i = 0; i < 3; i = i + 1) {
-    print(i);
-};
+print("Testing variable assignments and arithmetic operations:");
+a = 10;
+b = 5;
+print("a =");
+print(a);
+print("b =");
+print(b);
 
-x = 5;
-y= 6;
-if (x == 5) {
-    print(x);
+sum = a + b;
+print("a + b =");
+print(sum);
+
+difference = a - b;
+print("a - b =");
+print(difference);
+
+product = a * b;
+print("a * b =");
+print(product);
+
+quotient = a / b;
+print("a / b =");
+print(quotient);
+
+print("Testing if-else statements:");
+if (a > b) {
+    print("a is greater than b");
 } else {
-    print(y);
+    print("a is not greater than b");
 };
+
+print("Testing while loop:");
+counter = 0;
+while (counter < 3) {
+    print("counter =");
+    print(counter);
+    counter = counter + 1;
+};
+
+print("Testing function definitions and calls:");
+function add(x, y) {
+    return x + y;
+};
+
+result = add(a, b);
+print("add(a, b) =");
+print(result);
+
+print("Testing recursion with factorial function:");
+function factorial(n) {
+    if (n == 0) {
+        return 1;
+    } else {
+        return n * factorial(n - 1);
+    };
+};
+
+fact = factorial(5);
+print("factorial(5) =");
+print(fact);
+
+print("All tests completed");
