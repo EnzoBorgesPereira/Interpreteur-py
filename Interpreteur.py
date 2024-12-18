@@ -382,21 +382,70 @@ def evalFunctionCall(p):
             display_executionStack()
 
 s = '''
-function carre(a) {
-    print("Calculating square of");
-    print(a);
-    return a * a;
+print("Starting all-in-one test");
+
+print("Testing variable assignments and arithmetic operations:");
+a = 10;
+b = 5;
+print("a =");
+print(a);
+print("b =");
+print(b);
+
+sum = a + b;
+print("a + b =");
+print(sum);
+
+difference = a - b;
+print("a - b =");
+print(difference);
+
+product = a * b;
+print("a * b =");
+print(product);
+
+quotient = a / b;
+print("a / b =");
+print(quotient);
+
+print("Testing if-else statements:");
+if (a > b) {
+    print("a is greater than b");
+} else {
+    print("a is not greater than b");
 };
 
-function sumSquares(x, y) {
-    print("Calculating sum of squares:");
-    result1 = carre(x);
-    result2 = carre(y);
-    return result1 + result2;
+print("Testing while loop:");
+counter = 0;
+while (counter < 3) {
+    print("counter =");
+    print(counter);
+    counter = counter + 1;
 };
 
-result = sumSquares(2, 3);
-print("Final result:");
+print("Testing function definitions and calls:");
+function add(x, y) {
+    return x + y;
+};
+
+result = add(a, b);
+print("add(a, b) =");
 print(result);
+
+print("Testing recursion with factorial function:");
+function factorial(n) {
+    if (n == 0) {
+        return 1;
+    } else {
+        return n * factorial(n - 1);
+    };
+};
+
+fact = factorial(5);
+print("factorial(5) =");
+print(fact);
+
+print("All tests completed");
 '''
+
 yacc.parse(s)
