@@ -4,7 +4,7 @@ import ply.lex as lex
 import ply.yacc as yacc
 
 executionStack = []
-showExecutionStack = False  
+showExecutionStack = False
 
 if len(sys.argv) > 1 and sys.argv[1] == "--show-stack":
     showExecutionStack = True
@@ -26,7 +26,8 @@ reserved = {
 tokens = [
     'NUMBER', 'MINUS', 'PLUS', 'TIMES', 'DIVIDE', 'LPAREN',
     'RPAREN', 'OR', 'AND', 'SEMI', 'EGAL', 'NAME', 'INF', 'SUP',
-    'EGALEGAL', 'INFEG', 'LBRACE', 'RBRACE', 'COMMA', 'STRING', 'INCR', 'DECR'
+    'EGALEGAL', 'INFEG', 'LBRACE', 'RBRACE', 'COMMA', 'STRING', 'INCR', 'DECR',
+    'LBRACKET', 'RBRACKET', 'DOT'
 ] + list(reserved.values())
 
 t_PLUS = r'\+'
@@ -48,6 +49,9 @@ t_RBRACE = r'\}'
 t_COMMA = r','
 t_INCR = r'\+\+'
 t_DECR = r'--'
+t_LBRACKET = r'\['
+t_RBRACKET = r'\]'
+t_DOT = r'\.'
 
 def t_NAME(t):
     r'[a-zA-Z_][a-zA-Z_0-9]*'
@@ -61,8 +65,12 @@ def t_NUMBER(t):
 
 def t_STRING(t):
     r'"([^\\"]|\\.)*"'
-    t.value = t.value[1:-1]  
+    t.value = t.value[1:-1]
     return t
+
+def t_COMMENT(t):
+    r'//[^\n]*'
+    pass
 
 t_ignore = " \t"
 
@@ -172,9 +180,13 @@ def p_expression_function_call(p):
     'expression : NAME LPAREN param_call RPAREN'
     p[0] = ('call', p[1], p[3])
 
+def p_expression_array(p):
+    'expression : LBRACKET array_elements RBRACKET'
+    p[0] = ('array', p[2])
+
 def p_expression_string(p):
     'expression : STRING'
-    p[0] = f'"{p[1]}"'  # Ajoute les guillemets pour les marquer comme littérales
+    p[0] = ('string', p[1])
 
 def p_statement_expr(p):
     'statement : expression'
@@ -220,6 +232,32 @@ def p_empty(p):
 def p_expression_uminus(p):
     'expression : MINUS expression %prec UMINUS'
     p[0] = ('-', 0, p[2])
+
+def p_array_elements(p):
+    '''array_elements : expression
+                      | array_elements COMMA expression
+                      | empty'''
+    if len(p) == 2:
+        p[0] = [] if p[1] is None else [p[1]]
+    else:
+        p[0] = p[1] + [p[3]]
+
+def p_expression_array_method(p):
+    'expression : expression DOT NAME LPAREN arguments RPAREN'
+    p[0] = ('array_method', p[1], p[3], p[5])
+
+def p_arguments(p):
+    '''arguments : expression
+                 | arguments COMMA expression
+                 | empty'''
+    if len(p) == 2:
+        p[0] = [] if p[1] is None else [p[1]]
+    else:
+        p[0] = p[1] + [p[3]]
+
+def p_expression_index(p):
+    'expression : expression LBRACKET expression RBRACKET'
+    p[0] = ('index', p[1], p[3])
 
 def p_error(p):
     print("Erreur de syntaxe !", p)
@@ -271,28 +309,30 @@ def evalInst(p):
             else:
                 names[p[1]] = value
         elif tag == 'function':
-            names[p[1][0]] = p 
+            names[p[1][0]] = p
         elif tag == 'return':
             raise ReturnException(evalExpr(p[1]))
-        elif tag == 'if':  
+        elif tag == 'if':
             if evalExpr(p[1]):
                 evalInst(p[2])
             else:
                 handle_elif_else(p[3])
-        elif tag == 'while':  
+        elif tag == 'while':
             while evalExpr(p[1]):
                 evalInst(p[2])
         elif tag == 'for':  
             evalInst(p[1])  
             while evalExpr(p[2]):
                 evalInst(p[4]) 
-                evalInst(p[3])  
+                evalInst(p[3])
     else:
         log(f"Instruction inconnue : {p}")
 
 def evalExpr(t):
     if isinstance(t, int):
         return t
+    elif isinstance(t, tuple) and t[0] == 'string':
+        return t[1]
     elif isinstance(t, str):
         # Si c'est une chaîne littérale (marquée par des guillemets), retourne-la directement
         if t.startswith('"') and t.endswith('"'):
@@ -327,26 +367,87 @@ def evalExpr(t):
                 return left and right
             elif op == 'OR':
                 return left or right
+
+        elif op == 'array':
+            return [evalExpr(element) for element in t[1]]
+
+        elif op == 'index':
+            array = evalExpr(t[1])
+            index = evalExpr(t[2])
+            return array[index]
+
+        elif op == 'array_method':
+            array = evalExpr(t[1])
+            method = t[2]
+            args = [evalExpr(arg) for arg in t[3]]
+            if method == 'push':
+                array.append(args[0])
+                return array
+            elif method == 'pop':
+                return array.pop()
+            elif method == 'insert':
+                array.insert(args[0], args[1])
+                return array
+            elif method == 'remove':
+                array.pop(args[0])
+                return array
+            elif method == 'indexOf':
+                return array.index(args[0])
+            elif method == 'contains':
+                return args[0] in array
+            elif method == 'reverse':
+                array.reverse()
+                return array
+            elif method == 'sort':
+                array.sort()
+                return array
+            elif method == 'clear':
+                array.clear()
+                return array
+            elif method == 'len':
+                return len(array)
+            else:
+                print(f"Erreur : Méthode {method} non reconnue")
+                return array
+
         elif op == 'call':
             return evalFunctionCall(t)
+
         elif op == '++':
             val = evalExpr(t[1])
             if isinstance(t[1], str):
-                names[t[1]] = val + 1
+                # Incrémentation en place
+                if executionStack:
+                    if t[1] in executionStack[-1]:
+                        executionStack[-1][t[1]] = val + 1
+                    else:
+                        names[t[1]] = val + 1
+                else:
+                    names[t[1]] = val + 1
                 return val
             else:
                 raise ValueError("++ s'applique uniquement sur une variable")
+
         elif op == '--':
             val = evalExpr(t[1])
             if isinstance(t[1], str):
-                names[t[1]] = val - 1
+                # Décrémentation en place
+                if executionStack:
+                    if t[1] in executionStack[-1]:
+                        executionStack[-1][t[1]] = val - 1
+                    else:
+                        names[t[1]] = val - 1
+                else:
+                    names[t[1]] = val - 1
                 return val
             else:
                 raise ValueError("-- s'applique uniquement sur une variable")
+
         elif op == '-':
-            return -evalExpr(t[1])
+            return -evalExpr(t[2])
+
     return 0
-    
+
 def evalFunctionCall(p):
     global executionStack
 
@@ -370,7 +471,7 @@ def evalFunctionCall(p):
         display_executionStack()
 
     try:
-        result = evalInst(funcDef[1][2]) 
+        result = evalInst(funcDef[1][2])
         log(f"Retour de la fonction {funcName} : {result}")
         return result
     except ReturnException as e:
@@ -382,70 +483,125 @@ def evalFunctionCall(p):
             display_executionStack()
 
 s = '''
-print("Starting all-in-one test");
+print("Début du test global");
 
-print("Testing variable assignments and arithmetic operations:");
-a = 10;
-b = 5;
-print("a =");
-print(a);
-print("b =");
-print(b);
+// Test basique de variable et incrément/décrément
+x = 5;
+print("x initial :");
+print(x);
 
-sum = a + b;
-print("a + b =");
-print(sum);
+x++;
+print("x après x++ :");
+print(x);
 
-difference = a - b;
-print("a - b =");
-print(difference);
+x--;
+print("x après x-- :");
+print(x);
 
-product = a * b;
-print("a * b =");
-print(product);
+x = x + 10;
+print("x après x = x + 10 :");
+print(x);
 
-quotient = a / b;
-print("a / b =");
-print(quotient);
+// Test sur les tableaux
+arr = [10, 20, 30];
+print("Tableau initial arr :");
+print(arr);
 
-print("Testing if-else statements:");
-if (a > b) {
-    print("a is greater than b");
+arr.push(40);
+print("Après arr.push(40) :");
+print(arr);
+
+arr.pop();
+print("Après arr.pop() :");
+print(arr);
+
+arr.insert(1, 99);
+print("Après arr.insert(1, 99) :");
+print(arr);
+
+arr.remove(0);
+print("Après arr.remove(0) :");
+print(arr);
+
+index = arr.indexOf(99);
+print("Index de 99 dans arr :");
+print(index);
+
+exists = arr.contains(20);
+print("Le tableau contient 20 :");
+print(exists);
+
+arr.reverse();
+print("Après arr.reverse() :");
+print(arr);
+
+arr.sort();
+print("Après arr.sort() :");
+print(arr);
+
+length = arr.len();
+print("Longueur du tableau :");
+print(length);
+
+arr.clear();
+print("Après arr.clear() :");
+print(arr);
+
+// Test conditions
+y = 0;
+if (x > 10) {
+    y = 1;
+    print("x est supérieur à 10, y = 1");
 } else {
-    print("a is not greater than b");
-};
+    y = 2;
+    print("x n'est pas supérieur à 10, y = 2");
+}
+print("y après if :");
+print(y);
 
-print("Testing while loop:");
-counter = 0;
-while (counter < 3) {
-    print("counter =");
-    print(counter);
-    counter = counter + 1;
-};
+// Test if/elif/else
+z = 5;
+if (z == 0) {
+    print("z == 0");
+} elif (z == 5) {
+    print("z == 5");
+} else {
+    print("z n'est ni 0 ni 5");
+}
 
-print("Testing function definitions and calls:");
-function add(x, y) {
-    return x + y;
-};
+// Test boucle while
+compteur = 0;
+while (compteur < 3) {
+    print("Boucle while, compteur =");
+    print(compteur);
+    compteur++;
+}
 
-result = add(a, b);
-print("add(a, b) =");
-print(result);
+// Test fonction
+function add(a, b) {
+    return a + b;
+}
 
-print("Testing recursion with factorial function:");
-function factorial(n) {
-    if (n == 0) {
-        return 1;
-    } else {
-        return n * factorial(n - 1);
-    };
-};
+res = add(2, 3);
+print("Résultat de add(2,3) =");
+print(res);
 
-fact = factorial(5);
-print("factorial(5) =");
-print(fact);
+// Test fonction avec un tableau en paramètre
+function firstElement(tab) {
+    return tab[0];
+}
 
-print("All tests completed");
+foo = [42, 43, 44];
+first = firstElement(foo);
+print("Premier élément de foo :");
+print(first);
+
+// Test logique
+cond = (x > 0) & (x < 100);
+print("x est entre 0 et 100 :");
+print(cond);
+
+print("Fin du test global");
 '''
 
 yacc.parse(s)

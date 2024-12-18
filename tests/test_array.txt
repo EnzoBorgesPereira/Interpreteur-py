@@ -1,0 +1,47 @@
+print("Début des tests sur les tableaux");
+
+arr = [1, 2, 3];
+print("Tableau initial :");
+print(arr);
+
+arr.push(4);
+print("Après arr.push(4) :");
+print(arr);
+
+arr.pop();
+print("Après arr.pop() :");
+print(arr);
+
+arr.insert(1, 5);
+print("Après arr.insert(1, 5) :");
+print(arr);
+
+arr.remove(2);
+print("Après arr.remove(2) :");
+print(arr);
+
+index = arr.indexOf(5);
+print("Index de 5 dans arr :");
+print(index);
+
+exists = arr.contains(3);
+print("Le tableau contient 3 :");
+print(exists);
+
+arr.reverse();
+print("Après arr.reverse() :");
+print(arr);
+
+arr.sort();
+print("Après arr.sort() :");
+print(arr);
+
+length = arr.len();
+print("Longueur du tableau :");
+print(length);
+
+arr.clear();
+print("Après arr.clear() :");
+print(arr);
+
+print("Fin des tests sur les tableaux");
