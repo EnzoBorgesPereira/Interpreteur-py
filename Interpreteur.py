@@ -294,10 +294,8 @@ def evalExpr(t):
     if isinstance(t, int):
         return t
     elif isinstance(t, str):
-        # Si c'est une chaîne littérale (marquée par des guillemets), retourne-la directement
         if t.startswith('"') and t.endswith('"'):
-            return t[1:-1]  # Supprime les guillemets
-        # Sinon, traite comme une variable
+            return t[1:-1]  
         for context in reversed(executionStack):
             if t in context:
                 return context[t]
