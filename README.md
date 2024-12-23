@@ -16,17 +16,17 @@ Show stack :  python Interpreteur.py --show--stack
 11. Gérer les imports
 
 ## Petites ameliorations :
-1. Gestion des erreurs (variable non initialisée, …)
+1. Gestion des erreurs (variable non initialisée, …) ✅
 2. Gérer la déclaration explicite des variables
 3. Gestion du type chaine de caractères (et extension d’autant de l’instruction d’affichage)
-4. Gestion des variables globales
+4. Gestion des variables globales ✅
 5. affectations multiples à la python : a, b = 2, 3
 6. comparaison multiples à la python : 1<2<3 (déconseillé)
 7. print multiples : print(x+2, « toto ») ;
 8. incrémentation et affectation élargie : x++, x+=1
 9. possibilités de mettre des commentaires dans le code (et génération automatique d’une
-docString)
-10. printString
+docString) ✅
+10. printString ✅
 11. input utilisateur
 
 Groupe :

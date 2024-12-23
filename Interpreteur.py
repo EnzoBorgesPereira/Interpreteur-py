@@ -272,7 +272,7 @@ def evalInst(p):
             if len(p) > 2:
                 return evalInst(p[2])
             return val
-        elif tag == 'assign':
+        if tag == 'assign':
             value = evalExpr(p[2])
             log(f"Affectation : {p[1]} = {value}")
             if executionStack:
@@ -305,10 +305,17 @@ def evalExpr(t):
     elif isinstance(t, str):
         if t.startswith('"') and t.endswith('"'):
             return t[1:-1]  
+
         for context in reversed(executionStack):
             if t in context:
                 return context[t]
-        return names.get(t, 0)
+
+        if t in names:
+            return names[t]
+
+        print(f"Erreur : La variable '{t}' n'a pas été initialisée.")
+        sys.exit(1)  
+
     elif isinstance(t, tuple):
         op = t[0]
         if op in ['+', '-', '*', '/', '<', '>', '<=', '==', 'AND', 'OR']:
@@ -321,6 +328,9 @@ def evalExpr(t):
             elif op == '*':
                 return left * right
             elif op == '/':
+                if right == 0:
+                    print("Erreur : Division par zéro.")
+                    sys.exit(1)
                 return left // right
             elif op == '<':
                 return left < right
@@ -335,18 +345,28 @@ def evalExpr(t):
             elif op == 'OR':
                 return left or right
         elif op == 'call':
+            funcName = t[1]
+            if funcName not in names:
+                print(f"Erreur : La fonction '{funcName}' a été appelée mais n'est pas définie.")
+                sys.exit(1)
             return evalFunctionCall(t)
         elif op == '++':
             val = evalExpr(t[1])
             if isinstance(t[1], str):
-                names[t[1]] = val + 1
+                if t[1] in names: 
+                    names[t[1]] = val + 1
+                else:
+                    executionStack[-1][t[1]] = val + 1
                 return val
             else:
                 raise ValueError("++ s'applique uniquement sur une variable")
         elif op == '--':
             val = evalExpr(t[1])
             if isinstance(t[1], str):
-                names[t[1]] = val - 1
+                if t[1] in names: 
+                    names[t[1]] = val - 1
+                else:
+                    executionStack[-1][t[1]] = val - 1
                 return val
             else:
                 raise ValueError("-- s'applique uniquement sur une variable")
@@ -360,8 +380,8 @@ def evalFunctionCall(p):
     funcName = p[1]
     funcDef = names.get(funcName)
     if not funcDef:
-        print(f"Erreur : Fonction {funcName} non définie")
-        return
+        print(f"Erreur : La fonction '{funcName}' a été appelée mais n'est pas définie.")
+        sys.exit(1)
 
     paramNames = unpackParams(funcDef[1][1]) 
     paramValues = unpackParams(p[2]) 
@@ -389,11 +409,7 @@ def evalFunctionCall(p):
             display_executionStack()
 
 s = '''
-print("Starting all-in-one test");
-
-/* Ceci est un commentaire
-sur plusieurs lignes */
-// Ceci est un commentaire sur une ligne
+functionsteak(a); 
 
 '''
 
