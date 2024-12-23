@@ -64,6 +64,15 @@ def t_STRING(t):
     t.value = t.value[1:-1]  
     return t
 
+def t_comment_single_line(t):
+    r'//.*'
+    pass
+
+def t_comment_multi_line(t):
+    r'/\*([^*]|\*(?!/))*\*/'
+    t.lexer.lineno += t.value.count('\n')  
+    pass 
+
 t_ignore = " \t"
 
 def t_newline(t):
@@ -382,68 +391,10 @@ def evalFunctionCall(p):
 s = '''
 print("Starting all-in-one test");
 
-print("Testing variable assignments and arithmetic operations:");
-a = 10;
-b = 5;
-print("a =");
-print(a);
-print("b =");
-print(b);
+/* Ceci est un commentaire
+sur plusieurs lignes */
+// Ceci est un commentaire sur une ligne
 
-sum = a + b;
-print("a + b =");
-print(sum);
-
-difference = a - b;
-print("a - b =");
-print(difference);
-
-product = a * b;
-print("a * b =");
-print(product);
-
-quotient = a / b;
-print("a / b =");
-print(quotient);
-
-print("Testing if-else statements:");
-if (a > b) {
-    print("a is greater than b");
-} else {
-    print("a is not greater than b");
-};
-
-print("Testing while loop:");
-counter = 0;
-while (counter < 3) {
-    print("counter =");
-    print(counter);
-    counter = counter + 1;
-};
-
-print("Testing function definitions and calls:");
-function add(x, y) {
-    return x + y;
-};
-
-result = add(a, b);
-print("add(a, b) =");
-print(result);
-
-print("Testing recursion with factorial function:");
-function factorial(n) {
-    if (n == 0) {
-        return 1;
-    } else {
-        return n * factorial(n - 1);
-    };
-};
-
-fact = factorial(5);
-print("factorial(5) =");
-print(fact);
-
-print("All tests completed");
 '''
 
 yacc.parse(s)
