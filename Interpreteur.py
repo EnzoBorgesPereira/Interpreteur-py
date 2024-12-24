@@ -26,7 +26,7 @@ reserved = {
 tokens = [
     'NUMBER', 'MINUS', 'PLUS', 'TIMES', 'DIVIDE', 'LPAREN',
     'RPAREN', 'OR', 'AND', 'SEMI', 'EGAL', 'NAME', 'INF', 'SUP',
-    'EGALEGAL', 'INFEG', 'LBRACE', 'RBRACE', 'COMMA', 'STRING', 'INCR', 'DECR'
+    'EGALEGAL', 'INFEG', 'LBRACE', 'RBRACE', 'COMMA', 'STRING', 'INCR', 'DECR', 'PLUSEQUAL'
 ] + list(reserved.values())
 
 t_PLUS = r'\+'
@@ -48,6 +48,7 @@ t_RBRACE = r'\}'
 t_COMMA = r','
 t_INCR = r'\+\+'
 t_DECR = r'--'
+t_PLUSEQUAL = r'\+='
 
 def t_NAME(t):
     r'[a-zA-Z_][a-zA-Z_0-9]*'
@@ -117,6 +118,10 @@ def p_bloc(p):
         p[0] = ('bloc', p[1], p[2])
     else:
         p[0] = p[1]
+
+def p_statement_plusequal(p):
+    'statement : NAME PLUSEQUAL expression'
+    p[0] = ('plusequal', p[1], p[3])
 
 def p_statement_function_definition(p):
     '''statement : function'''
@@ -296,6 +301,16 @@ def evalInst(p):
             while evalExpr(p[2]):
                 evalInst(p[4]) 
                 evalInst(p[3])  
+        elif tag == 'plusequal':
+            variable_name = p[1]
+            increment_value = evalExpr(p[2])
+            if executionStack and variable_name in executionStack[-1]:
+                executionStack[-1][variable_name] += increment_value
+            elif variable_name in names:
+                names[variable_name] += increment_value
+            else:
+                print(f"Erreur : La variable '{variable_name}' n'a pas été initialisée.")
+                sys.exit(1)
     else:
         log(f"Instruction inconnue : {p}")
 
@@ -409,8 +424,14 @@ def evalFunctionCall(p):
             display_executionStack()
 
 s = '''
-functionsteak(a); 
+a = 10;
+print("Valeur initiale de a :");
+print(a);
 
+a += 5;
+print("Après a += 5 :");
+print(a);
+
+b += 10;  // Cette ligne doit générer une erreur
 '''
-
 yacc.parse(s)
