@@ -139,6 +139,22 @@ def p_statement_if(p):
     'statement : IF LPAREN expression RPAREN LBRACE bloc RBRACE elif_else_part'
     p[0] = ('if', p[3], p[6], p[8])
 
+def p_statement_return(p):
+    'statement : RETURN expression'
+    p[0] = ('return', p[2])
+
+def p_statement_function(p):
+    '''function : FUNCTION NAME LPAREN param RPAREN LBRACE bloc RBRACE'''
+    p[0] = ('function', (p[2], p[4], p[7]))
+
+def p_statement_while(p):
+    'statement : WHILE LPAREN expression RPAREN LBRACE bloc RBRACE'
+    p[0] = ('while', p[3], p[6])
+
+def p_statement_expr(p):
+    'statement : expression'
+    p[0] = p[1]
+
 def p_elif_else_part(p):
     '''elif_else_part : ELIF LPAREN expression RPAREN LBRACE bloc RBRACE elif_else_part
                       | ELSE LBRACE bloc RBRACE
@@ -150,9 +166,6 @@ def p_elif_else_part(p):
     else:
         p[0] = None
 
-def p_statement_while(p):
-    'statement : WHILE LPAREN expression RPAREN LBRACE bloc RBRACE'
-    p[0] = ('while', p[3], p[6])
 
 def p_param(p):
     '''param : NAME
@@ -174,25 +187,13 @@ def p_param_call(p):
     else:
         p[0] = ('param', p[1], p[3])
 
-def p_statement_return(p):
-    'statement : RETURN expression'
-    p[0] = ('return', p[2])
-
-def p_statement_function(p):
-    '''function : FUNCTION NAME LPAREN param RPAREN LBRACE bloc RBRACE'''
-    p[0] = ('function', (p[2], p[4], p[7]))
-
 def p_expression_function_call(p):
     'expression : NAME LPAREN param_call RPAREN'
     p[0] = ('call', p[1], p[3])
 
 def p_expression_string(p):
     'expression : STRING'
-    p[0] = f'"{p[1]}"'  # Ajoute les guillemets pour les marquer comme littérales
-
-def p_statement_expr(p):
-    'statement : expression'
-    p[0] = p[1]
+    p[0] = f'"{p[1]}"'  
 
 def p_expression_binop(p):
     '''expression : expression PLUS expression
