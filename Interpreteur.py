@@ -155,6 +155,10 @@ def p_statement_expr(p):
     'statement : expression'
     p[0] = p[1]
 
+def p_statement_multiple_assign(p):
+    'statement : param EGAL param_call'
+    p[0] = ('multiAssign', p[1], p[3])
+
 def p_elif_else_part(p):
     '''elif_else_part : ELIF LPAREN expression RPAREN LBRACE bloc RBRACE elif_else_part
                       | ELSE LBRACE bloc RBRACE
@@ -309,9 +313,22 @@ def evalInst(p):
                 executionStack[-1][variable_name] += increment_value
             elif variable_name in names:
                 names[variable_name] += increment_value
-            else:
-                print(f"Erreur : La variable '{variable_name}' n'a pas été initialisée.")
+        elif tag == 'multiAssign':
+            variables = unpackParams(p[1])
+            values = unpackParams(p[2])
+
+            log(f"Variables : {variables}")
+            log(f"Valeurs : {values}")
+
+            if len(variables) != len(values):
+                print(f"Erreur : Le nombre de variables ({len(variables)}) ne correspond pas au nombre de valeurs ({len(values)}).")
+                print(f"Variables : {variables}")
+                print(f"Valeurs : {values}")                
                 sys.exit(1)
+
+            for var, val in zip(variables, values):
+                log(f"Affectation de {var} = {val}")
+                evalInst(('assign', var, val))
     else:
         log(f"Instruction inconnue : {p}")
 
@@ -425,14 +442,23 @@ def evalFunctionCall(p):
             display_executionStack()
 
 s = '''
-a = 10;
-print("Valeur initiale de a :");
-print(a);
+print("Testing multiple assignments:");
 
-a += 5;
-print("Après a += 5 :");
+a, b = 2, 3;
+print("a =");
 print(a);
+print("b =");
+print(b);
 
-b += 10;  // Cette ligne doit générer une erreur
+c, d, e = 4, 5, 6;
+print("c =");
+print(c);
+print("d =");
+print(d);
+print("e =");
+print(e);
+
+print("Testing error case:");
+x, y = 7;  // Devrait générer une erreur
 '''
 yacc.parse(s)
