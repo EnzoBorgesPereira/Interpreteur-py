@@ -62,7 +62,7 @@ def t_NUMBER(t):
 
 def t_STRING(t):
     r'"([^\\"]|\\.)*"'
-    t.value = t.value[1:-1]  
+    t.value =  t.value[1:-1] 
     return t
 
 def t_comment_single_line(t):
@@ -128,8 +128,16 @@ def p_statement_function_definition(p):
     p[0] = p[1]
 
 def p_statement_print(p):
-    'statement : PRINT LPAREN expression RPAREN'
-    p[0] = ('print', p[3])
+    '''statement : PRINT LPAREN expression_list RPAREN'''
+    p[0] = ('print', p[3])  # p[3] sera directement une liste d'expressions
+
+def p_expression_list(p):
+    '''expression_list : expression
+                       | expression_list COMMA expression'''
+    if len(p) == 2:  # Une seule expression
+        p[0] = [p[1]]  # Place l'expression dans une liste
+    else:  # Plusieurs expressions séparées par des virgules
+        p[0] = p[1] + [p[3]]  # Concatène les listes
 
 def p_statement_assign(p):
     'statement : NAME EGAL expression'
@@ -184,12 +192,11 @@ def p_param(p):
 
 def p_param_call(p):
     '''param_call : expression
-                  | param_call COMMA expression
-                  | empty'''
-    if len(p) == 2:
-        p[0] = ('param', p[1])
-    else:
-        p[0] = ('param', p[1], p[3])
+                  | param_call COMMA expression'''
+    if len(p) == 2: 
+        p[0] = ('param', p[1])  
+    elif len(p) == 4:  
+        p[0] = ('param', p[1], ('param', p[3]))  
 
 def p_expression_function_call(p):
     'expression : NAME LPAREN param_call RPAREN'
@@ -197,7 +204,7 @@ def p_expression_function_call(p):
 
 def p_expression_string(p):
     'expression : STRING'
-    p[0] = f'"{p[1]}"'  
+    p[0] = p[1]
 
 def p_expression_binop(p):
     '''expression : expression PLUS expression
@@ -276,7 +283,8 @@ def evalInst(p):
         tag = p[0]
         log(f"Exécution de l'instruction : {p}")
         if tag == 'print':
-            print(evalExpr(p[1]))
+            values = [evalExpr(expr) for expr in p[1]]  # p[1] est une liste
+            print(*values)
         elif tag == 'bloc':
             val = evalInst(p[1])
             if len(p) > 2:
@@ -336,19 +344,13 @@ def evalExpr(t):
     if isinstance(t, int):
         return t
     elif isinstance(t, str):
-        if t.startswith('"') and t.endswith('"'):
-            return t[1:-1]  
-
-        for context in reversed(executionStack):
-            if t in context:
-                return context[t]
-
-        if t in names:
+        # Vérifie si la chaîne est une chaîne littérale
+        if t in names:  # Si c'est une variable connue
             return names[t]
-
-        print(f"Erreur : La variable '{t}' n'a pas été initialisée.")
-        sys.exit(1)  
-
+        else:  # Sinon, on suppose que c'est une chaîne littérale
+            return t
+    elif isinstance(t, tuple) and t[0] == 'STRING':
+        return t[1]  # Retourne directement la valeur de la chaîne
     elif isinstance(t, tuple):
         op = t[0]
         if op in ['+', '-', '*', '/', '<', '>', '<=', '==', 'AND', 'OR']:
@@ -383,30 +385,8 @@ def evalExpr(t):
                 print(f"Erreur : La fonction '{funcName}' a été appelée mais n'est pas définie.")
                 sys.exit(1)
             return evalFunctionCall(t)
-        elif op == '++':
-            val = evalExpr(t[1])
-            if isinstance(t[1], str):
-                if t[1] in names: 
-                    names[t[1]] = val + 1
-                else:
-                    executionStack[-1][t[1]] = val + 1
-                return val
-            else:
-                raise ValueError("++ s'applique uniquement sur une variable")
-        elif op == '--':
-            val = evalExpr(t[1])
-            if isinstance(t[1], str):
-                if t[1] in names: 
-                    names[t[1]] = val - 1
-                else:
-                    executionStack[-1][t[1]] = val - 1
-                return val
-            else:
-                raise ValueError("-- s'applique uniquement sur une variable")
-        elif op == '-':
-            return -evalExpr(t[1])
     return 0
-    
+
 def evalFunctionCall(p):
     global executionStack
 
@@ -442,23 +422,17 @@ def evalFunctionCall(p):
             display_executionStack()
 
 s = '''
-print("Testing multiple assignments:");
+a = "world";
+print("Hello",a);
 
-a, b = 2, 3;
-print("a =");
-print(a);
-print("b =");
-print(b);
+a = 1;
+b = 2;
+function add(a, b) {
+    return a + b;
+};
 
-c, d, e = 4, 5, 6;
-print("c =");
-print(c);
-print("d =");
-print(d);
-print("e =");
-print(e);
+c= add(1, 2);
 
-print("Testing error case:");
-x, y = 7;  // Devrait générer une erreur
+print(c, a, b);
 '''
 yacc.parse(s)
