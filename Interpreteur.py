@@ -119,6 +119,8 @@ def p_bloc(p):
     else:
         p[0] = p[1]
 
+# Statement
+
 def p_statement_plusequal(p):
     'statement : NAME PLUSEQUAL expression'
     p[0] = ('plusequal', p[1], p[3])
@@ -129,15 +131,7 @@ def p_statement_function_definition(p):
 
 def p_statement_print(p):
     '''statement : PRINT LPAREN expression_list RPAREN'''
-    p[0] = ('print', p[3])  # p[3] sera directement une liste d'expressions
-
-def p_expression_list(p):
-    '''expression_list : expression
-                       | expression_list COMMA expression'''
-    if len(p) == 2:  # Une seule expression
-        p[0] = [p[1]]  # Place l'expression dans une liste
-    else:  # Plusieurs expressions séparées par des virgules
-        p[0] = p[1] + [p[3]]  # Concatène les listes
+    p[0] = ('print', p[3])  
 
 def p_statement_assign(p):
     'statement : NAME EGAL expression'
@@ -178,7 +172,7 @@ def p_elif_else_part(p):
     else:
         p[0] = None
 
-
+# Param of a function
 def p_param(p):
     '''param : NAME
              | param COMMA NAME
@@ -190,6 +184,7 @@ def p_param(p):
     else:
         p[0] = ('param', p[1], p[3])
 
+# Param call of a function
 def p_param_call(p):
     '''param_call : expression
                   | param_call COMMA expression'''
@@ -197,6 +192,8 @@ def p_param_call(p):
         p[0] = ('param', p[1])  
     elif len(p) == 4:  
         p[0] = ('param', p[1], ('param', p[3]))  
+
+# Expression
 
 def p_expression_function_call(p):
     'expression : NAME LPAREN param_call RPAREN'
@@ -218,6 +215,14 @@ def p_expression_binop(p):
                   | expression AND expression
                   | expression OR expression'''
     p[0] = (p[2], p[1], p[3])
+
+def p_expression_list(p):
+    '''expression_list : expression
+                       | expression_list COMMA expression'''
+    if len(p) == 2: 
+        p[0] = [p[1]]  
+    else:  
+        p[0] = p[1] + [p[3]]  
 
 def p_expression_incr(p):
     'expression : expression INCR'
@@ -256,6 +261,7 @@ class ReturnException(Exception):
     def __init__(self, value):
         self.value = value
 
+# Unpack parameters of a function call 
 def unpackParams(params):
     if isinstance(params, tuple) and params[0] == 'param':
         return unpackParams(params[1]) + unpackParams(params[2:]) if len(params) > 2 else [params[1]]
@@ -266,6 +272,7 @@ def unpackParams(params):
     else:
         return [params]
 
+# Handle elif and else statements
 def handle_elif_else(node):
     if node is None:
         return
@@ -278,12 +285,13 @@ def handle_elif_else(node):
     elif tag == 'else':
         evalInst(node[1])
 
+# Evaluate an instruction
 def evalInst(p):
     if isinstance(p, tuple):
         tag = p[0]
         log(f"Exécution de l'instruction : {p}")
         if tag == 'print':
-            values = [evalExpr(expr) for expr in p[1]]  # p[1] est une liste
+            values = [evalExpr(expr) for expr in p[1]]  
             print(*values)
         elif tag == 'bloc':
             val = evalInst(p[1])
@@ -340,17 +348,17 @@ def evalInst(p):
     else:
         log(f"Instruction inconnue : {p}")
 
+# Evaluate an expression
 def evalExpr(t):
     if isinstance(t, int):
         return t
     elif isinstance(t, str):
-        # Vérifie si la chaîne est une chaîne littérale
-        if t in names:  # Si c'est une variable connue
+        if t in names:  
             return names[t]
-        else:  # Sinon, on suppose que c'est une chaîne littérale
+        else:  
             return t
     elif isinstance(t, tuple) and t[0] == 'STRING':
-        return t[1]  # Retourne directement la valeur de la chaîne
+        return t[1] 
     elif isinstance(t, tuple):
         op = t[0]
         if op in ['+', '-', '*', '/', '<', '>', '<=', '==', 'AND', 'OR']:
@@ -387,6 +395,7 @@ def evalExpr(t):
             return evalFunctionCall(t)
     return 0
 
+# Evaluate a function call
 def evalFunctionCall(p):
     global executionStack
 
