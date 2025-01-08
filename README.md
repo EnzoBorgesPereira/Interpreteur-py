@@ -1,7 +1,9 @@
 # Interpreteur python
+
 Show stack :  python Interpreteur.py --show--stack
 
-## Améliorations :
+## Améliorations
+
 1. Fonctions void ✅
 2. Fonction return avec coupe circuit ✅
 3. Gérer les elif ✅
@@ -15,7 +17,8 @@ Show stack :  python Interpreteur.py --show--stack
 10. Optimiser l’interprétation de fonctions récursives terminales (sur la taille de la pile)
 11. Gérer les imports
 
-## Petites ameliorations :
+## Petites ameliorations
+
 1. Gestion des erreurs (variable non initialisée, …) ✅
 2. Gérer la déclaration explicite des variables
 3. Gestion du type chaine de caractères (et extension d’autant de l’instruction d’affichage)
@@ -33,17 +36,3 @@ Groupe :
 
 - BORGES PEREIRA Enzo
 - BACHER Téo
-
-## Utilisation
-
-Pour lancer l'interpreteur, il suffit de lancer le fichier `Interpreteur.py` avec python3.
-
-```bash
-py Interpreteur.py
-```
-
-Il est possible de faire afficher la pile d'exécution à chaque étape en ajoutant l'option `--show-stack`.
-
-```bash
-py Interpreteur.py --show-stack
-```
