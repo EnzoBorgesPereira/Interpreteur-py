@@ -26,7 +26,7 @@ reserved = {
 tokens = [
     'NUMBER', 'MINUS', 'PLUS', 'TIMES', 'DIVIDE', 'LPAREN',
     'RPAREN', 'OR', 'AND', 'SEMI', 'EGAL', 'NAME', 'INF', 'SUP',
-    'EGALEGAL', 'INFEG', 'LBRACE', 'RBRACE', 'COMMA', 'STRING', 'INCR', 'DECR'
+    'EGALEGAL', 'INFEG', 'LBRACE', 'RBRACE', 'COMMA', 'STRING', 'INCR', 'DECR', 'PLUSEQUAL'
 ] + list(reserved.values())
 
 t_PLUS = r'\+'
@@ -48,6 +48,7 @@ t_RBRACE = r'\}'
 t_COMMA = r','
 t_INCR = r'\+\+'
 t_DECR = r'--'
+t_PLUSEQUAL = r'\+='
 
 def t_NAME(t):
     r'[a-zA-Z_][a-zA-Z_0-9]*'
@@ -61,8 +62,17 @@ def t_NUMBER(t):
 
 def t_STRING(t):
     r'"([^\\"]|\\.)*"'
-    t.value = t.value[1:-1]  
+    t.value =  t.value[1:-1] 
     return t
+
+def t_comment_single_line(t):
+    r'//.*'
+    pass
+
+def t_comment_multi_line(t):
+    r'/\*([^*]|\*(?!/))*\*/'
+    t.lexer.lineno += t.value.count('\n')  
+    pass 
 
 t_ignore = " \t"
 
@@ -109,13 +119,19 @@ def p_bloc(p):
     else:
         p[0] = p[1]
 
+# Statement
+
+def p_statement_plusequal(p):
+    'statement : NAME PLUSEQUAL expression'
+    p[0] = ('plusequal', p[1], p[3])
+
 def p_statement_function_definition(p):
     '''statement : function'''
     p[0] = p[1]
 
 def p_statement_print(p):
-    'statement : PRINT LPAREN expression RPAREN'
-    p[0] = ('print', p[3])
+    '''statement : PRINT LPAREN expression_list RPAREN'''
+    p[0] = ('print', p[3])  
 
 def p_statement_assign(p):
     'statement : NAME EGAL expression'
@@ -124,6 +140,26 @@ def p_statement_assign(p):
 def p_statement_if(p):
     'statement : IF LPAREN expression RPAREN LBRACE bloc RBRACE elif_else_part'
     p[0] = ('if', p[3], p[6], p[8])
+
+def p_statement_return(p):
+    'statement : RETURN expression'
+    p[0] = ('return', p[2])
+
+def p_statement_function(p):
+    '''function : FUNCTION NAME LPAREN param RPAREN LBRACE bloc RBRACE'''
+    p[0] = ('function', (p[2], p[4], p[7]))
+
+def p_statement_while(p):
+    'statement : WHILE LPAREN expression RPAREN LBRACE bloc RBRACE'
+    p[0] = ('while', p[3], p[6])
+
+def p_statement_expr(p):
+    'statement : expression'
+    p[0] = p[1]
+
+def p_statement_multiple_assign(p):
+    'statement : param EGAL param_call'
+    p[0] = ('multiAssign', p[1], p[3])
 
 def p_elif_else_part(p):
     '''elif_else_part : ELIF LPAREN expression RPAREN LBRACE bloc RBRACE elif_else_part
@@ -136,10 +172,7 @@ def p_elif_else_part(p):
     else:
         p[0] = None
 
-def p_statement_while(p):
-    'statement : WHILE LPAREN expression RPAREN LBRACE bloc RBRACE'
-    p[0] = ('while', p[3], p[6])
-
+# Param of a function
 def p_param(p):
     '''param : NAME
              | param COMMA NAME
@@ -151,22 +184,16 @@ def p_param(p):
     else:
         p[0] = ('param', p[1], p[3])
 
+# Param call of a function
 def p_param_call(p):
     '''param_call : expression
-                  | param_call COMMA expression
-                  | empty'''
-    if len(p) == 2:
-        p[0] = ('param', p[1])
-    else:
-        p[0] = ('param', p[1], p[3])
+                  | param_call COMMA expression'''
+    if len(p) == 2: 
+        p[0] = ('param', p[1])  
+    elif len(p) == 4:  
+        p[0] = ('param', p[1], ('param', p[3]))  
 
-def p_statement_return(p):
-    'statement : RETURN expression'
-    p[0] = ('return', p[2])
-
-def p_statement_function(p):
-    '''function : FUNCTION NAME LPAREN param RPAREN LBRACE bloc RBRACE'''
-    p[0] = ('function', (p[2], p[4], p[7]))
+# Expression
 
 def p_expression_function_call(p):
     'expression : NAME LPAREN param_call RPAREN'
@@ -174,10 +201,6 @@ def p_expression_function_call(p):
 
 def p_expression_string(p):
     'expression : STRING'
-    p[0] = f'"{p[1]}"'  # Ajoute les guillemets pour les marquer comme littérales
-
-def p_statement_expr(p):
-    'statement : expression'
     p[0] = p[1]
 
 def p_expression_binop(p):
@@ -192,6 +215,14 @@ def p_expression_binop(p):
                   | expression AND expression
                   | expression OR expression'''
     p[0] = (p[2], p[1], p[3])
+
+def p_expression_list(p):
+    '''expression_list : expression
+                       | expression_list COMMA expression'''
+    if len(p) == 2: 
+        p[0] = [p[1]]  
+    else:  
+        p[0] = p[1] + [p[3]]  
 
 def p_expression_incr(p):
     'expression : expression INCR'
@@ -230,6 +261,7 @@ class ReturnException(Exception):
     def __init__(self, value):
         self.value = value
 
+# Unpack parameters of a function call 
 def unpackParams(params):
     if isinstance(params, tuple) and params[0] == 'param':
         return unpackParams(params[1]) + unpackParams(params[2:]) if len(params) > 2 else [params[1]]
@@ -240,6 +272,7 @@ def unpackParams(params):
     else:
         return [params]
 
+# Handle elif and else statements
 def handle_elif_else(node):
     if node is None:
         return
@@ -252,18 +285,20 @@ def handle_elif_else(node):
     elif tag == 'else':
         evalInst(node[1])
 
+# Evaluate an instruction
 def evalInst(p):
     if isinstance(p, tuple):
         tag = p[0]
         log(f"Exécution de l'instruction : {p}")
         if tag == 'print':
-            print(evalExpr(p[1]))
+            values = [evalExpr(expr) for expr in p[1]]  
+            print(*values)
         elif tag == 'bloc':
             val = evalInst(p[1])
             if len(p) > 2:
                 return evalInst(p[2])
             return val
-        elif tag == 'assign':
+        if tag == 'assign':
             value = evalExpr(p[2])
             log(f"Affectation : {p[1]} = {value}")
             if executionStack:
@@ -287,21 +322,43 @@ def evalInst(p):
             while evalExpr(p[2]):
                 evalInst(p[4]) 
                 evalInst(p[3])  
+        elif tag == 'plusequal':
+            variable_name = p[1]
+            increment_value = evalExpr(p[2])
+            if executionStack and variable_name in executionStack[-1]:
+                executionStack[-1][variable_name] += increment_value
+            elif variable_name in names:
+                names[variable_name] += increment_value
+        elif tag == 'multiAssign':
+            variables = unpackParams(p[1])
+            values = unpackParams(p[2])
+
+            log(f"Variables : {variables}")
+            log(f"Valeurs : {values}")
+
+            if len(variables) != len(values):
+                print(f"Erreur : Le nombre de variables ({len(variables)}) ne correspond pas au nombre de valeurs ({len(values)}).")
+                print(f"Variables : {variables}")
+                print(f"Valeurs : {values}")                
+                sys.exit(1)
+
+            for var, val in zip(variables, values):
+                log(f"Affectation de {var} = {val}")
+                evalInst(('assign', var, val))
     else:
         log(f"Instruction inconnue : {p}")
 
+# Evaluate an expression
 def evalExpr(t):
     if isinstance(t, int):
         return t
     elif isinstance(t, str):
-        # Si c'est une chaîne littérale (marquée par des guillemets), retourne-la directement
-        if t.startswith('"') and t.endswith('"'):
-            return t[1:-1]  # Supprime les guillemets
-        # Sinon, traite comme une variable
-        for context in reversed(executionStack):
-            if t in context:
-                return context[t]
-        return names.get(t, 0)
+        if t in names:  
+            return names[t]
+        else:  
+            return t
+    elif isinstance(t, tuple) and t[0] == 'STRING':
+        return t[1] 
     elif isinstance(t, tuple):
         op = t[0]
         if op in ['+', '-', '*', '/', '<', '>', '<=', '==', 'AND', 'OR']:
@@ -314,6 +371,9 @@ def evalExpr(t):
             elif op == '*':
                 return left * right
             elif op == '/':
+                if right == 0:
+                    print("Erreur : Division par zéro.")
+                    sys.exit(1)
                 return left // right
             elif op == '<':
                 return left < right
@@ -328,33 +388,22 @@ def evalExpr(t):
             elif op == 'OR':
                 return left or right
         elif op == 'call':
+            funcName = t[1]
+            if funcName not in names:
+                print(f"Erreur : La fonction '{funcName}' a été appelée mais n'est pas définie.")
+                sys.exit(1)
             return evalFunctionCall(t)
-        elif op == '++':
-            val = evalExpr(t[1])
-            if isinstance(t[1], str):
-                names[t[1]] = val + 1
-                return val
-            else:
-                raise ValueError("++ s'applique uniquement sur une variable")
-        elif op == '--':
-            val = evalExpr(t[1])
-            if isinstance(t[1], str):
-                names[t[1]] = val - 1
-                return val
-            else:
-                raise ValueError("-- s'applique uniquement sur une variable")
-        elif op == '-':
-            return -evalExpr(t[1])
     return 0
-    
+
+# Evaluate a function call
 def evalFunctionCall(p):
     global executionStack
 
     funcName = p[1]
     funcDef = names.get(funcName)
     if not funcDef:
-        print(f"Erreur : Fonction {funcName} non définie")
-        return
+        print(f"Erreur : La fonction '{funcName}' a été appelée mais n'est pas définie.")
+        sys.exit(1)
 
     paramNames = unpackParams(funcDef[1][1]) 
     paramValues = unpackParams(p[2]) 
@@ -382,70 +431,17 @@ def evalFunctionCall(p):
             display_executionStack()
 
 s = '''
-print("Starting all-in-one test");
+a = "world";
+print("Hello",a);
 
-print("Testing variable assignments and arithmetic operations:");
-a = 10;
-b = 5;
-print("a =");
-print(a);
-print("b =");
-print(b);
-
-sum = a + b;
-print("a + b =");
-print(sum);
-
-difference = a - b;
-print("a - b =");
-print(difference);
-
-product = a * b;
-print("a * b =");
-print(product);
-
-quotient = a / b;
-print("a / b =");
-print(quotient);
-
-print("Testing if-else statements:");
-if (a > b) {
-    print("a is greater than b");
-} else {
-    print("a is not greater than b");
+a = 1;
+b = 2;
+function add(a, b) {
+    return a + b;
 };
 
-print("Testing while loop:");
-counter = 0;
-while (counter < 3) {
-    print("counter =");
-    print(counter);
-    counter = counter + 1;
-};
+c= add(1, 2);
 
-print("Testing function definitions and calls:");
-function add(x, y) {
-    return x + y;
-};
-
-result = add(a, b);
-print("add(a, b) =");
-print(result);
-
-print("Testing recursion with factorial function:");
-function factorial(n) {
-    if (n == 0) {
-        return 1;
-    } else {
-        return n * factorial(n - 1);
-    };
-};
-
-fact = factorial(5);
-print("factorial(5) =");
-print(fact);
-
-print("All tests completed");
+print(c, a, b);
 '''
-
 yacc.parse(s)
