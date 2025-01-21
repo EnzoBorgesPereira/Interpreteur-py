@@ -10,6 +10,12 @@ Show stack :  python Interpreteur.py --show--stack
 4. Scope ✅
 5. Fonctions avec return et scope des variables et gestion de la pile d’exécution ✅
 6. Les tableaux (suivant degré d’aboutissement : push, pop, len, printTab, init) ✅
+   1. clear() ✅
+   2. len() ✅
+   3. contains(n) ✅
+   4. reverse() ✅
+   5. remove(n) ✅
+   6. insert(n, i) ✅
 7. le POO (suivant degré d’aboutissement)
 8. Gérer le passage des paramètres par référence et les pointeurs (suivant degré
    d’aboutissement)

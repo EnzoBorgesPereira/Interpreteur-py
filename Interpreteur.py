@@ -4,7 +4,7 @@ import ply.lex as lex
 import ply.yacc as yacc
 
 executionStack = []
-showExecutionStack = False  
+showExecutionStack = False
 
 if len(sys.argv) > 1 and sys.argv[1] == "--show-stack":
     showExecutionStack = True
@@ -19,14 +19,16 @@ reserved = {
     'else': 'ELSE',
     'elif': 'ELIF',
     'while': 'WHILE',
+    'for': 'FOR',
     'function': 'FUNCTION',
-    'return': 'RETURN'
+    'return': 'RETURN',
 }
 
 tokens = [
     'NUMBER', 'MINUS', 'PLUS', 'TIMES', 'DIVIDE', 'LPAREN',
     'RPAREN', 'OR', 'AND', 'SEMI', 'EGAL', 'NAME', 'INF', 'SUP',
-    'EGALEGAL', 'INFEG', 'LBRACE', 'RBRACE', 'COMMA', 'STRING', 'INCR', 'DECR', 'PLUSEQUAL'
+    'EGALEGAL', 'INFEG', 'LBRACE', 'RBRACE', 'COMMA', 'STRING', 'INCR', 'DECR', 'PLUSEQUAL',
+    'LBRACKET', 'RBRACKET', 'DOT'
 ] + list(reserved.values())
 
 t_PLUS = r'\+'
@@ -49,6 +51,9 @@ t_COMMA = r','
 t_INCR = r'\+\+'
 t_DECR = r'--'
 t_PLUSEQUAL = r'\+='
+t_LBRACKET = r'\['
+t_RBRACKET = r'\]'
+t_DOT = r'\.'
 
 def t_NAME(t):
     r'[a-zA-Z_][a-zA-Z_0-9]*'
@@ -62,7 +67,7 @@ def t_NUMBER(t):
 
 def t_STRING(t):
     r'"([^\\"]|\\.)*"'
-    t.value =  t.value[1:-1] 
+    t.value =  t.value[1:-1]
     return t
 
 def t_comment_single_line(t):
@@ -149,6 +154,10 @@ def p_statement_function(p):
     '''function : FUNCTION NAME LPAREN param RPAREN LBRACE bloc RBRACE'''
     p[0] = ('function', (p[2], p[4], p[7]))
 
+def p_statement_for(p):
+    '''statement : FOR LPAREN statement SEMI expression SEMI statement RPAREN LBRACE bloc RBRACE'''
+    p[0] = ('for', p[3], p[5], p[7], p[9])
+
 def p_statement_while(p):
     'statement : WHILE LPAREN expression RPAREN LBRACE bloc RBRACE'
     p[0] = ('while', p[3], p[6])
@@ -194,6 +203,10 @@ def p_param_call(p):
         p[0] = ('param', p[1], ('param', p[3]))  
 
 # Expression
+
+def p_expression_array(p):
+    'expression : LBRACKET array_elements RBRACKET'
+    p[0] = ('array', p[2])
 
 def p_expression_function_call(p):
     'expression : NAME LPAREN param_call RPAREN'
@@ -252,6 +265,32 @@ def p_expression_uminus(p):
     'expression : MINUS expression %prec UMINUS'
     p[0] = ('-', 0, p[2])
 
+def p_array_elements(p):
+    '''array_elements : expression
+                      | array_elements COMMA expression
+                      | empty'''
+    if len(p) == 2:
+        p[0] = [] if p[1] is None else [p[1]]
+    else:
+        p[0] = p[1] + [p[3]]
+
+def p_expression_array_method(p):
+    'expression : expression DOT NAME LPAREN arguments RPAREN'
+    p[0] = ('array_method', p[1], p[3], p[5])
+
+def p_arguments(p):
+    '''arguments : expression
+                 | arguments COMMA expression
+                 | empty'''
+    if len(p) == 2:
+        p[0] = [] if p[1] is None else [p[1]]
+    else:
+        p[0] = p[1] + [p[3]]
+
+def p_expression_index(p):
+    'expression : expression LBRACKET expression RBRACKET'
+    p[0] = ('index', p[1], p[3])
+
 def p_error(p):
     print("Erreur de syntaxe !", p)
 
@@ -291,14 +330,18 @@ def evalInst(p):
         tag = p[0]
         log(f"Exécution de l'instruction : {p}")
         if tag == 'print':
-            values = [evalExpr(expr) for expr in p[1]]  
-            print(*values)
+            values = [evalExpr(expr) for expr in p[1]]
+            for value in values:
+                if isinstance(value, list):
+                    print("[" + ", ".join(map(str, value)) + "]")
+                else:
+                    print(value)
         elif tag == 'bloc':
             val = evalInst(p[1])
             if len(p) > 2:
                 return evalInst(p[2])
             return val
-        if tag == 'assign':
+        elif tag == 'assign':
             value = evalExpr(p[2])
             log(f"Affectation : {p[1]} = {value}")
             if executionStack:
@@ -387,6 +430,71 @@ def evalExpr(t):
                 return left and right
             elif op == 'OR':
                 return left or right
+        elif op == 'array':
+            return [evalExpr(element) for element in t[1]]
+        elif op == 'index':
+            array = evalExpr(t[1])
+            index = evalExpr(t[2])
+            return array[index]
+        elif op == 'array_method':
+            array = evalExpr(t[1])
+            method = t[2]
+            args = [evalExpr(arg) for arg in t[3]]
+            if method == 'push':
+                array.append(args[0])
+                return array
+            elif method == 'pop':
+                return array.pop()
+            elif method == 'insert':
+                array.insert(args[0], args[1])
+                return array
+            elif method == 'remove':
+                array.pop(args[0])
+                return array
+            elif method == 'indexOf':
+                return array.index(args[0])
+            elif method == 'contains':
+                return args[0] in array
+            elif method == 'reverse':
+                array.reverse()
+                return array
+            elif method == 'sort':
+                array.sort()
+                return array
+            elif method == 'clear':
+                array.clear()
+                return array
+            elif method == 'len':
+                return len(array)
+            else:
+                print(f"Erreur : Méthode {method} non reconnue")
+                return array
+        elif op == '++':
+            val = evalExpr(t[1])
+            if isinstance(t[1], str):
+                if executionStack:
+                    if t[1] in executionStack[-1]:
+                        executionStack[-1][t[1]] = val + 1
+                    else:
+                        names[t[1]] = val + 1
+                else:
+                    names[t[1]] = val + 1
+                return val
+            else:
+                raise ValueError("++ s'applique uniquement sur une variable")
+        elif op == '--':
+            val = evalExpr(t[1])
+            if isinstance(t[1], str):
+                if executionStack:
+                    if t[1] in executionStack[-1]:
+                        executionStack[-1][t[1]] = val - 1
+                    else:
+                        names[t[1]] = val - 1
+                else:
+                    names[t[1]] = val - 1
+                return val
+            else:
+                raise ValueError("-- s'applique uniquement sur une variable")
         elif op == 'call':
             funcName = t[1]
             if funcName not in names:
@@ -431,17 +539,8 @@ def evalFunctionCall(p):
             display_executionStack()
 
 s = '''
-a = "world";
-print("Hello",a);
-
-a = 1;
-b = 2;
-function add(a, b) {
-    return a + b;
-};
-
-c= add(1, 2);
-
-print(c, a, b);
+arr = [1, 2, 3];
+print(arr);
 '''
+
 yacc.parse(s)
