@@ -94,7 +94,8 @@ def t_error(t):
 
 lex.lex()
 
-names = {}  # Espace global : enregistre les variables globales et les fonctions
+# Espace global
+names = {}
 
 precedence = (
     ('left', 'OR'),
@@ -116,10 +117,8 @@ def display_executionStack():
 
 def p_start(p):
     'start : bloc'
-    # Affiche l'AST et le graphe
     print(p[1])
     printTreeGraph(p[1])
-    # Lance l'évaluation
     evalInst(p[1])
 
 # ------------------------ Grammaire bloc + statements ------------------------
@@ -165,7 +164,6 @@ def p_statement_function(p):
 
 def p_statement_for(p):
     '''statement : FOR LPAREN statement SEMI expression SEMI statement RPAREN LBRACE bloc RBRACE'''
-    # for (init; condition; incr) { bloc }
     p[0] = ('for', p[3], p[5], p[7], p[9])
 
 def p_statement_while(p):
@@ -257,7 +255,7 @@ def p_expression_list(p):
     expression_list : expression
                     | expression_list COMMA expression
     '''
-    # Construit une liste d'expressions (pour print, par ex.)
+    # Construit une liste d'expressions
     if len(p) == 2: 
         p[0] = [p[1]]  
     else:  
@@ -305,7 +303,6 @@ def p_array_elements(p):
 
 def p_expression_array_method(p):
     'expression : expression DOT NAME LPAREN arguments RPAREN'
-    # ex: arr.push(10)
     p[0] = ('array_method', p[1], p[3], p[5])
 
 def p_arguments(p):
@@ -447,7 +444,6 @@ def evalExpr(t):
         elif t in names:
             return names[t]
         else:
-            # C'est juste une chaîne (ex: "abc") ou une variable inconnue
             return t
     elif isinstance(t, tuple):
         op = t[0]
@@ -486,7 +482,6 @@ def evalExpr(t):
             index = evalExpr(t[2])
             return array[index]
         elif op == 'array_method':
-            # ex: arr.push(10)
             array = evalExpr(t[1])
             method = t[2]
             args = [evalExpr(arg) for arg in t[3]]
@@ -545,7 +540,7 @@ def evalExpr(t):
         elif op == 'call':
             # Appel de fonction
             return evalFunctionCall(t)
-    # Si rien ne matche, on renvoie 0 par défaut (ou None)
+    # Si rien ne matche, on renvoie 0 par défaut
     return 0
 
 def evalFunctionCall(p):
@@ -598,9 +593,6 @@ def evalFunctionCall(p):
         if showExecutionStack:
             display_executionStack()
 
-# ---------------------------------------------------------------------------
-# Exemple de code testé: fibonacci
-# ---------------------------------------------------------------------------
 s = '''
 a, b = 3, 1;
 print(a, b);
