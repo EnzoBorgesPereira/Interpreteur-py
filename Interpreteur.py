@@ -7,7 +7,7 @@ executionStack = []
 showExecutionStack = False
 
 # Active l'affichage de la pile via l'argument --show-stack
-if len(sys.argv) > 1 and sys.argv[1] == "--show-stack":
+if '--show-stack' in sys.argv:
     showExecutionStack = True
 
 def log(message):
@@ -117,7 +117,7 @@ def display_executionStack():
 
 def p_start(p):
     'start : bloc'
-    print(p[1])
+    #print(p[1])
     printTreeGraph(p[1])
     evalInst(p[1])
 
@@ -328,7 +328,7 @@ yacc.yacc()
 # ------------------------ Gestion du return ------------------------
 
 class ReturnException(Exception):
-    """Exception interne pour propager un 'return'."""
+    """Exception interne pour propager un 'return' et retourne la valeur."""
     def __init__(self, value):
         self.value = value
 
@@ -547,7 +547,7 @@ def evalFunctionCall(p):
     """
     p = ('call', funcName, [liste d'expressions (arguments)])
     On cherche la définition ('function', (nom_fct, liste_params, bloc)),
-    puis on exécute son corps dans un nouveau scope local.
+    puis on exécute le bloc dans un new scope local.
     """
     global executionStack
 
@@ -573,7 +573,7 @@ def evalFunctionCall(p):
         print(f"Attendu {len(paramNames)}, reçu {len(paramValues)}.")
         sys.exit(1)
 
-    # Nouveau scope local
+    # Nouveau scope local, on ajoute les paramètres à la pile d'exécution
     localScope = dict(zip(paramNames, paramValues))
     executionStack.append(localScope)
 
@@ -589,23 +589,25 @@ def evalFunctionCall(p):
         log(f"Retour explicite de la fonction {funcName} : {e.value}")
         return e.value
     finally:
+        # On retire le scope local de la pile d'exécution
         executionStack.pop()
         if showExecutionStack:
             display_executionStack()
 
-s = '''
-a, b = 3, 1;
-print(a, b);
-
-function fibonacci(n) {
-    if (n <= 1) {
-        return n;
-    };
-    return fibonacci(n - 1) + fibonacci(n - 2);
-};
-
-print(fibonacci(10));
-'''
-
-if __name__ == "__main__":
+if '-f' in sys.argv:
+    idx = sys.argv.index('-f')
+    if idx + 1 < len(sys.argv):
+        file_path_arg = sys.argv[idx + 1]
+        file_path = file_path_arg.split('>')[0].strip() # On ignore l'opérateur '>'
+        with open(file_path, 'r') as f:
+            content = f.read()
+        yacc.parse(content)
+    else:
+        print("Erreur : merci de préciser un fichier après '-f'.")
+        sys.exit(1)
+else:
+    s = '''
+    a, b = 1, 2;
+    print(a + b);
+    '''
     yacc.parse(s)
