@@ -37,7 +37,7 @@ Show stack :  python Interpreteur.py --show--stack
 docString) ✅
 10. printString ✅
 11. input utilisateur
-12. Interprétation d'un fichier (.txt) avec l'option `-f`
+12. Interprétation d'un fichier (.txt) avec l'option `-f` ✅
 
 Groupe :
 
