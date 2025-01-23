@@ -6,10 +6,12 @@ import ply.yacc as yacc
 executionStack = []
 showExecutionStack = False
 
+# Active l'affichage de la pile via l'argument --show-stack
 if len(sys.argv) > 1 and sys.argv[1] == "--show-stack":
     showExecutionStack = True
 
 def log(message):
+    """Affiche des logs si --show-stack est activé."""
     if showExecutionStack:
         print(message)
 
@@ -27,8 +29,8 @@ reserved = {
 tokens = [
     'NUMBER', 'MINUS', 'PLUS', 'TIMES', 'DIVIDE', 'LPAREN',
     'RPAREN', 'OR', 'AND', 'SEMI', 'EGAL', 'NAME', 'INF', 'SUP',
-    'EGALEGAL', 'INFEG', 'LBRACE', 'RBRACE', 'COMMA', 'STRING', 'INCR', 'DECR', 'PLUSEQUAL',
-    'LBRACKET', 'RBRACKET', 'DOT'
+    'EGALEGAL', 'INFEG', 'LBRACE', 'RBRACE', 'COMMA', 'STRING',
+    'INCR', 'DECR', 'PLUSEQUAL', 'LBRACKET', 'RBRACKET', 'DOT'
 ] + list(reserved.values())
 
 t_PLUS = r'\+'
@@ -66,6 +68,7 @@ def t_NUMBER(t):
     return t
 
 def t_STRING(t):
+    # Gère les chaînes entre guillemets "..."
     r'"([^\\"]|\\.)*"'
     t.value =  t.value[1:-1]
     return t
@@ -91,7 +94,7 @@ def t_error(t):
 
 lex.lex()
 
-names = {}
+names = {}  # Espace global : enregistre les variables globales et les fonctions
 
 precedence = (
     ('left', 'OR'),
@@ -104,6 +107,7 @@ precedence = (
 )
 
 def display_executionStack():
+    """Affiche la pile d'exécution pour debug."""
     if showExecutionStack:
         print("\nPile d'exécution :")
         for i, context in enumerate(reversed(executionStack)):
@@ -112,9 +116,13 @@ def display_executionStack():
 
 def p_start(p):
     'start : bloc'
+    # Affiche l'AST et le graphe
     print(p[1])
     printTreeGraph(p[1])
+    # Lance l'évaluation
     evalInst(p[1])
+
+# ------------------------ Grammaire bloc + statements ------------------------
 
 def p_bloc(p):
     '''bloc : bloc statement SEMI
@@ -123,8 +131,6 @@ def p_bloc(p):
         p[0] = ('bloc', p[1], p[2])
     else:
         p[0] = p[1]
-
-# Statement
 
 def p_statement_plusequal(p):
     'statement : NAME PLUSEQUAL expression'
@@ -136,6 +142,7 @@ def p_statement_function_definition(p):
 
 def p_statement_print(p):
     '''statement : PRINT LPAREN expression_list RPAREN'''
+    # print(...) => ('print', [expr1, expr2, ...])
     p[0] = ('print', p[3])  
 
 def p_statement_assign(p):
@@ -147,15 +154,18 @@ def p_statement_if(p):
     p[0] = ('if', p[3], p[6], p[8])
 
 def p_statement_return(p):
-    'statement : RETURN expression'
+    '''statement : RETURN expression
+                 | RETURN function'''
     p[0] = ('return', p[2])
 
 def p_statement_function(p):
     '''function : FUNCTION NAME LPAREN param RPAREN LBRACE bloc RBRACE'''
+    # On stocke (nom_fonction, [liste_params], bloc_corps)
     p[0] = ('function', (p[2], p[4], p[7]))
 
 def p_statement_for(p):
     '''statement : FOR LPAREN statement SEMI expression SEMI statement RPAREN LBRACE bloc RBRACE'''
+    # for (init; condition; incr) { bloc }
     p[0] = ('for', p[3], p[5], p[7], p[9])
 
 def p_statement_while(p):
@@ -168,6 +178,8 @@ def p_statement_expr(p):
 
 def p_statement_multiple_assign(p):
     'statement : param EGAL param_call'
+    # param => liste de noms de variables
+    # param_call => liste d'expressions
     p[0] = ('multiAssign', p[1], p[3])
 
 def p_elif_else_part(p):
@@ -181,28 +193,37 @@ def p_elif_else_part(p):
     else:
         p[0] = None
 
-# Param of a function
+# ------------------------ Grammaire pour paramètres -------------------------
+
 def p_param(p):
-    '''param : NAME
-             | param COMMA NAME
-             | empty'''
-    if len(p) == 2 and p[1] == 'empty':
-        p[0] = None 
+    '''
+    param : NAME
+          | param COMMA NAME
+          | empty
+    '''
+    # On renvoie une liste de noms
+    if len(p) == 2 and p[1] is None:
+        p[0] = []
     elif len(p) == 2:
-        p[0] = ('param', p[1])
+        p[0] = [p[1]]
     else:
-        p[0] = ('param', p[1], p[3])
+        p[0] = p[1] + [p[3]]
 
-# Param call of a function
 def p_param_call(p):
-    '''param_call : expression
-                  | param_call COMMA expression'''
-    if len(p) == 2: 
-        p[0] = ('param', p[1])  
-    elif len(p) == 4:  
-        p[0] = ('param', p[1], ('param', p[3]))  
+    '''
+    param_call : expression
+               | param_call COMMA expression
+               | empty
+    '''
+    # On renvoie une liste d'expressions
+    if len(p) == 2 and p[1] is None:
+        p[0] = []
+    elif len(p) == 2:
+        p[0] = [p[1]]
+    else:
+        p[0] = p[1] + [p[3]]
 
-# Expression
+# ------------------------ Expressions ------------------------
 
 def p_expression_array(p):
     'expression : LBRACKET array_elements RBRACKET'
@@ -217,21 +238,26 @@ def p_expression_string(p):
     p[0] = p[1]
 
 def p_expression_binop(p):
-    '''expression : expression PLUS expression
-                  | expression MINUS expression
-                  | expression TIMES expression
-                  | expression DIVIDE expression
-                  | expression INF expression
-                  | expression INFEG expression
-                  | expression EGALEGAL expression
-                  | expression SUP expression
-                  | expression AND expression
-                  | expression OR expression'''
+    '''
+    expression : expression PLUS expression
+               | expression MINUS expression
+               | expression TIMES expression
+               | expression DIVIDE expression
+               | expression INF expression
+               | expression INFEG expression
+               | expression EGALEGAL expression
+               | expression SUP expression
+               | expression AND expression
+               | expression OR expression
+    '''
     p[0] = (p[2], p[1], p[3])
 
 def p_expression_list(p):
-    '''expression_list : expression
-                       | expression_list COMMA expression'''
+    '''
+    expression_list : expression
+                    | expression_list COMMA expression
+    '''
+    # Construit une liste d'expressions (pour print, par ex.)
     if len(p) == 2: 
         p[0] = [p[1]]  
     else:  
@@ -263,12 +289,15 @@ def p_empty(p):
 
 def p_expression_uminus(p):
     'expression : MINUS expression %prec UMINUS'
+    # -x  => ('-', 0, x)
     p[0] = ('-', 0, p[2])
 
 def p_array_elements(p):
-    '''array_elements : expression
-                      | array_elements COMMA expression
-                      | empty'''
+    '''
+    array_elements : expression
+                   | array_elements COMMA expression
+                   | empty
+    '''
     if len(p) == 2:
         p[0] = [] if p[1] is None else [p[1]]
     else:
@@ -276,12 +305,15 @@ def p_array_elements(p):
 
 def p_expression_array_method(p):
     'expression : expression DOT NAME LPAREN arguments RPAREN'
+    # ex: arr.push(10)
     p[0] = ('array_method', p[1], p[3], p[5])
 
 def p_arguments(p):
-    '''arguments : expression
-                 | arguments COMMA expression
-                 | empty'''
+    '''
+    arguments : expression
+              | arguments COMMA expression
+              | empty
+    '''
     if len(p) == 2:
         p[0] = [] if p[1] is None else [p[1]]
     else:
@@ -296,23 +328,17 @@ def p_error(p):
 
 yacc.yacc()
 
+# ------------------------ Gestion du return ------------------------
+
 class ReturnException(Exception):
+    """Exception interne pour propager un 'return'."""
     def __init__(self, value):
         self.value = value
 
-# Unpack parameters of a function call 
-def unpackParams(params):
-    if isinstance(params, tuple) and params[0] == 'param':
-        return unpackParams(params[1]) + unpackParams(params[2:]) if len(params) > 2 else [params[1]]
-    elif isinstance(params, tuple) and len(params) == 1:
-        return [params[0]]
-    elif params is None:
-        return []
-    else:
-        return [params]
+# ------------------------ Évaluation ------------------------
 
-# Handle elif and else statements
 def handle_elif_else(node):
+    """Gère la cascade d'elif/else."""
     if node is None:
         return
     tag = node[0]
@@ -324,12 +350,13 @@ def handle_elif_else(node):
     elif tag == 'else':
         evalInst(node[1])
 
-# Evaluate an instruction
 def evalInst(p):
+    """Évalue une instruction (ou un bloc)."""
     if isinstance(p, tuple):
         tag = p[0]
         log(f"Exécution de l'instruction : {p}")
         if tag == 'print':
+            # p[1] = liste d'expressions
             values = [evalExpr(expr) for expr in p[1]]
             for value in values:
                 if isinstance(value, list):
@@ -337,71 +364,91 @@ def evalInst(p):
                 else:
                     print(value)
         elif tag == 'bloc':
+            # Un bloc : ('bloc', instr1, instr2)
             val = evalInst(p[1])
             if len(p) > 2:
                 return evalInst(p[2])
             return val
         elif tag == 'assign':
+            # p[1] = nom de variable, p[2] = expression
             value = evalExpr(p[2])
             log(f"Affectation : {p[1]} = {value}")
             if executionStack:
+                # Affectation dans le scope local
                 executionStack[-1][p[1]] = value
             else:
+                # Sinon dans le scope global
                 names[p[1]] = value
         elif tag == 'function':
-            names[p[1][0]] = p 
+            # p[1] = (nom_fct, [liste_params], bloc)
+            # On enregistre cette fonction dans le scope global
+            names[p[1][0]] = p
         elif tag == 'return':
+            # p[1] = expression
             raise ReturnException(evalExpr(p[1]))
-        elif tag == 'if':  
+        elif tag == 'if':
+            # ('if', condition, bloc, suite_elif_else)
             if evalExpr(p[1]):
                 evalInst(p[2])
             else:
                 handle_elif_else(p[3])
-        elif tag == 'while':  
+        elif tag == 'while':
             while evalExpr(p[1]):
                 evalInst(p[2])
-        elif tag == 'for':  
-            evalInst(p[1])  
-            while evalExpr(p[2]):
-                evalInst(p[4]) 
-                evalInst(p[3])  
+        elif tag == 'for':
+            # ('for', init, condition, incr, bloc)
+            evalInst(p[1])        # init
+            while evalExpr(p[2]): # condition
+                evalInst(p[4])    # bloc
+                evalInst(p[3])    # incr
         elif tag == 'plusequal':
+            # x += expr
             variable_name = p[1]
             increment_value = evalExpr(p[2])
             if executionStack and variable_name in executionStack[-1]:
                 executionStack[-1][variable_name] += increment_value
             elif variable_name in names:
                 names[variable_name] += increment_value
+            else:
+                # Variable inexistante : l'ajouter ?
+                names[variable_name] = increment_value
         elif tag == 'multiAssign':
-            variables = unpackParams(p[1])
-            values = unpackParams(p[2])
+            # p[1] = liste de variables, p[2] = liste d'expressions
+            variables = p[1]
+            expressions = p[2]
 
             log(f"Variables : {variables}")
-            log(f"Valeurs : {values}")
+            log(f"Valeurs (expressions) : {expressions}")
 
-            if len(variables) != len(values):
-                print(f"Erreur : Le nombre de variables ({len(variables)}) ne correspond pas au nombre de valeurs ({len(values)}).")
-                print(f"Variables : {variables}")
-                print(f"Valeurs : {values}")                
+            if len(variables) != len(expressions):
+                print(f"Erreur : Le nombre de variables ({len(variables)}) "
+                      f"ne correspond pas au nombre de valeurs ({len(expressions)}).")
                 sys.exit(1)
 
-            for var, val in zip(variables, values):
-                log(f"Affectation de {var} = {val}")
-                evalInst(('assign', var, val))
+            for var, expr in zip(variables, expressions):
+                value = evalExpr(expr)
+                log(f"Affectation de {var} = {value}")
+                if executionStack:
+                    executionStack[-1][var] = value
+                else:
+                    names[var] = value
     else:
         log(f"Instruction inconnue : {p}")
 
-# Evaluate an expression
 def evalExpr(t):
+    """Évalue une expression et renvoie sa valeur."""
     if isinstance(t, int):
         return t
     elif isinstance(t, str):
-        if t in names:  
+        # Vérifier d'abord dans le scope local (executionStack)
+        if executionStack and t in executionStack[-1]:
+            return executionStack[-1][t]
+        # Sinon vérifier dans le scope global
+        elif t in names:
             return names[t]
-        else:  
+        else:
+            # C'est juste une chaîne (ex: "abc") ou une variable inconnue
             return t
-    elif isinstance(t, tuple) and t[0] == 'STRING':
-        return t[1] 
     elif isinstance(t, tuple):
         op = t[0]
         if op in ['+', '-', '*', '/', '<', '>', '<=', '==', 'AND', 'OR']:
@@ -431,12 +478,15 @@ def evalExpr(t):
             elif op == 'OR':
                 return left or right
         elif op == 'array':
+            # Liste
             return [evalExpr(element) for element in t[1]]
         elif op == 'index':
+            # array[index]
             array = evalExpr(t[1])
             index = evalExpr(t[2])
             return array[index]
         elif op == 'array_method':
+            # ex: arr.push(10)
             array = evalExpr(t[1])
             method = t[2]
             args = [evalExpr(arg) for arg in t[3]]
@@ -472,65 +522,75 @@ def evalExpr(t):
         elif op == '++':
             val = evalExpr(t[1])
             if isinstance(t[1], str):
-                if executionStack:
-                    if t[1] in executionStack[-1]:
-                        executionStack[-1][t[1]] = val + 1
-                    else:
-                        names[t[1]] = val + 1
+                # Incrémentation de la variable
+                if executionStack and t[1] in executionStack[-1]:
+                    executionStack[-1][t[1]] = val + 1
                 else:
                     names[t[1]] = val + 1
+                # Retourne la valeur avant incrément
                 return val
             else:
                 raise ValueError("++ s'applique uniquement sur une variable")
         elif op == '--':
             val = evalExpr(t[1])
             if isinstance(t[1], str):
-                if executionStack:
-                    if t[1] in executionStack[-1]:
-                        executionStack[-1][t[1]] = val - 1
-                    else:
-                        names[t[1]] = val - 1
+                # Décrémentation de la variable
+                if executionStack and t[1] in executionStack[-1]:
+                    executionStack[-1][t[1]] = val - 1
                 else:
                     names[t[1]] = val - 1
                 return val
             else:
                 raise ValueError("-- s'applique uniquement sur une variable")
         elif op == 'call':
-            funcName = t[1]
-            if funcName not in names:
-                print(f"Erreur : La fonction '{funcName}' a été appelée mais n'est pas définie.")
-                sys.exit(1)
+            # Appel de fonction
             return evalFunctionCall(t)
+    # Si rien ne matche, on renvoie 0 par défaut (ou None)
     return 0
 
-# Evaluate a function call
 def evalFunctionCall(p):
+    """
+    p = ('call', funcName, [liste d'expressions (arguments)])
+    On cherche la définition ('function', (nom_fct, liste_params, bloc)),
+    puis on exécute son corps dans un nouveau scope local.
+    """
     global executionStack
 
     funcName = p[1]
-    funcDef = names.get(funcName)
-    if not funcDef:
+    argExprs = p[2]  # liste d'expressions
+
+    if funcName not in names:
         print(f"Erreur : La fonction '{funcName}' a été appelée mais n'est pas définie.")
         sys.exit(1)
 
-    paramNames = unpackParams(funcDef[1][1]) 
-    paramValues = unpackParams(p[2]) 
+    funcDef = names[funcName]  # ('function', (fName, paramNames, body))
+    if funcDef[0] != 'function':
+        print(f"Erreur : '{funcName}' n'est pas une fonction.")
+        sys.exit(1)
+
+    _, (fName, paramNames, body) = funcDef
+
+    # Évalue les arguments
+    paramValues = [evalExpr(expr) for expr in argExprs]
 
     if len(paramNames) != len(paramValues):
-        print(f"Erreur : Nombre de paramètres incorrect pour {funcName}")
-        return
+        print(f"Erreur : Nombre de paramètres incorrect pour '{funcName}'.")
+        print(f"Attendu {len(paramNames)}, reçu {len(paramValues)}.")
+        sys.exit(1)
 
-    localScope = dict(zip(paramNames, [evalExpr(val) for val in paramValues]))
+    # Nouveau scope local
+    localScope = dict(zip(paramNames, paramValues))
     executionStack.append(localScope)
 
     if showExecutionStack:
         display_executionStack()
 
     try:
-        result = evalInst(funcDef[1][2]) 
+        result = evalInst(body)
         log(f"Retour de la fonction {funcName} : {result}")
         return result
     except ReturnException as e:
+        # Cas d'un 'return' explicite dans la fonction
         log(f"Retour explicite de la fonction {funcName} : {e.value}")
         return e.value
     finally:
@@ -538,9 +598,22 @@ def evalFunctionCall(p):
         if showExecutionStack:
             display_executionStack()
 
+# ---------------------------------------------------------------------------
+# Exemple de code testé: fibonacci
+# ---------------------------------------------------------------------------
 s = '''
-arr = [1, 2, 3];
-print(arr);
+a, b = 3, 1;
+print(a, b);
+
+function fibonacci(n) {
+    if (n <= 1) {
+        return n;
+    };
+    return fibonacci(n - 1) + fibonacci(n - 2);
+};
+
+print(fibonacci(10));
 '''
 
-yacc.parse(s)
+if __name__ == "__main__":
+    yacc.parse(s)
