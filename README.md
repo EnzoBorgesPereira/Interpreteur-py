@@ -19,7 +19,7 @@ Show stack :  python Interpreteur.py --show--stack
 7. le POO (suivant degré d’aboutissement)
 8. Gérer le passage des paramètres par référence et les pointeurs (suivant degré
    d’aboutissement)
-9. Coder une fonction eval ou exec (à la python)
+9. Coder une fonction eval ou exec (à la python) (WIP)
 10. Optimiser l’interprétation de fonctions récursives terminales (sur la taille de la pile)
 11. Gérer les imports
 
@@ -36,8 +36,9 @@ Show stack :  python Interpreteur.py --show--stack
 9. possibilités de mettre des commentaires dans le code (et génération automatique d’une
 docString) ✅
 10. printString ✅
-11. input utilisateur
+11. input utilisateur (WIP)
 12. Interprétation d'un fichier (.txt) avec l'option `-f` ✅
+13. Organisation du code en plusieurs fichier (WIP)
 
 Groupe :
 
