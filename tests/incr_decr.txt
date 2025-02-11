@@ -1,0 +1,8 @@
+// tests/incr_decr.txt
+n = 5;
+print(n++);  // Affiche 5, puis n devient 6
+print(n);
+m = 10;
+print(m--);  // Affiche 10, puis m devient 9
+print(m);
+

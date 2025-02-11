@@ -1,0 +1,6 @@
+// tests/array.txt
+arr = [1, 2, 3];
+print(arr); // [1, 2, 3]
+temp = arr.pop();
+print(temp); // 3
+print(arr); // [1, 2]

@@ -197,12 +197,8 @@ def p_param(p):
     '''
     param : NAME
           | param COMMA NAME
-          | empty
     '''
-    # On renvoie une liste de noms
-    if len(p) == 2 and p[1] is None:
-        p[0] = []
-    elif len(p) == 2:
+    if len(p) == 2:
         p[0] = [p[1]]
     else:
         p[0] = p[1] + [p[3]]
@@ -294,7 +290,6 @@ def p_array_elements(p):
     '''
     array_elements : expression
                    | array_elements COMMA expression
-                   | empty
     '''
     if len(p) == 2:
         p[0] = [] if p[1] is None else [p[1]]
@@ -607,7 +602,10 @@ if '-f' in sys.argv:
         sys.exit(1)
 else:
     s = '''
-    a, b = 1, 2;
-    print(a + b);
+a = 5;
+b = 10;
+c = a + b * 2;
+d = (c - 5) / 3;
+print(a, b, c, d);
     '''
     yacc.parse(s)
