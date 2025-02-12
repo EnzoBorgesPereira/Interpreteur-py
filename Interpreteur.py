@@ -163,8 +163,8 @@ def p_statement_function(p):
     p[0] = ('function', (p[2], p[4], p[7]))
 
 def p_statement_for(p):
-    '''statement : FOR LPAREN statement SEMI expression SEMI statement RPAREN LBRACE bloc RBRACE'''
-    p[0] = ('for', p[3], p[5], p[7], p[9])
+    'statement : FOR LPAREN statement SEMI expression SEMI statement RPAREN LBRACE bloc RBRACE'
+    p[0] = ('for', p[3], p[5], p[7], p[10])
 
 def p_statement_while(p):
     'statement : WHILE LPAREN expression RPAREN LBRACE bloc RBRACE'
@@ -389,10 +389,14 @@ def evalInst(p):
                 evalInst(p[2])
         elif tag == 'for':
             # ('for', init, condition, incr, bloc)
-            evalInst(p[1])        # init
+            evalInst(p[1])        # initialisation
             while evalExpr(p[2]): # condition
-                evalInst(p[4])    # bloc
-                evalInst(p[3])    # incr
+                evalInst(p[4])    # bloc (corps de la boucle)
+                # Traitement de l'incrément selon sa nature : assign ou plusequal
+                if isinstance(p[3], tuple) and p[3][0] in ('plusequal', 'assign', 'multiAssign'):
+                    evalInst(p[3])
+                else:
+                    evalExpr(p[3])
         elif tag == 'plusequal':
             # x += expr
             variable_name = p[1]
@@ -424,6 +428,8 @@ def evalInst(p):
                     executionStack[-1][var] = value
                 else:
                     names[var] = value
+        elif tag in ('++', '--'):
+            evalExpr(p)
     else:
         log(f"Instruction inconnue : {p}")
 
@@ -602,10 +608,8 @@ if '-f' in sys.argv:
         sys.exit(1)
 else:
     s = '''
-a = 5;
-b = 10;
-c = a + b * 2;
-d = (c - 5) / 3;
-print(a, b, c, d);
+for (i = 0; i < 3; i++) {
+    print(i);
+};
     '''
     yacc.parse(s)
